@@ -1,0 +1,11 @@
+<component name="libraryTable">
+  <library name="CUP">
+    <CLASSES>
+      <root url="file://$PROJECT_DIR$/lib/CUP" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES>
+      <root url="file://$PROJECT_DIR$/lib/CUP" />
+    </SOURCES>
+  </library>
+</component>

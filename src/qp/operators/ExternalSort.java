@@ -22,6 +22,7 @@ public class ExternalSort extends Operator {
 
     ObjectInputStream in;
     ObjectOutputStream out;
+    int count = 0;
 
     boolean eos;
     public ExternalSort(String filename,Schema sc, Vector as,int type,int numBuff){
@@ -42,11 +43,9 @@ public class ExternalSort extends Operator {
     public void doSort(){
         Boolean eof=false;
         generateSortedRuns(sourceFile);
-        for(String a:fileNames){
-            System.out.println(a);
-        }
+        System.out.println("here");
         String finalFile = Merge(fileNames);
-        System.out.println(finalFile);
+        System.out.println("hhere");
         try{
             in = new ObjectInputStream(new FileInputStream(finalFile));
             out = new ObjectOutputStream(new FileOutputStream(sourceFile));
@@ -66,10 +65,10 @@ public class ExternalSort extends Operator {
                     System.exit(1);
                 }
             }
-        System.out.println("65");
+        System.out.println(count);
         File f = new File(finalFile);
         f.delete();
-
+        System.exit(1);
     }
 
     private String Merge(Vector<String> runs){
@@ -77,7 +76,6 @@ public class ExternalSort extends Operator {
         int inputNum = numOfBuffers-1;
         int outputNum = 1;
         if(runs.size()==1){
-            System.out.println("run.size =1");
             return runs.get(0);
         }else{
             Vector<String> newRuns= new Vector<>();
@@ -207,7 +205,9 @@ public class ExternalSort extends Operator {
             try {
                 if(batches.size() == numOfBuffers){
                     //convert batches to tuples
+
                     tuplesInRun = batchToTuple(batches);
+
                     Collections.sort(tuplesInRun,tc);
                     //convert tuple to batches
                     Vector<Batch> thisRun = tupleToBatch(tuplesInRun);
@@ -217,13 +217,16 @@ public class ExternalSort extends Operator {
                     out = new ObjectOutputStream(new FileOutputStream(filename));
                     for(Batch b:thisRun){
                         out.writeObject(b);
+                        count = count + b.size();
+                        System.out.println(b.size());
                     }
                     out.close();
                     runNo++;
                     batches = new Vector<>();
                 }else{
                     try{
-                        batches.add((Batch)in.readObject());
+                        Batch present = (Batch) in.readObject();
+                        batches.add(present);
                     }catch (EOFException eof){
                         eos = true;
                     }
@@ -300,10 +303,8 @@ public class ExternalSort extends Operator {
         return result;
     }
     private Vector<Tuple> batchToTuple(Vector<Batch> batches){
-        System.out.println(batches.size()+"batchToTUPLE");
         Vector<Tuple> tuples = new Vector<>();
         for(Batch batch:batches){
-            System.out.println(batch.size()+"qdqwfq");
             for(int i = 0;i<batch.size();i++){
                 tuples.add(batch.elementAt(i));
             }

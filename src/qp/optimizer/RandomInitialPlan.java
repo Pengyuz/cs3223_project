@@ -173,7 +173,8 @@ public class RandomInitialPlan{
 	    jn.setSchema(newsche);
 	    /** randomly select a join type**/
 	    int numJMeth = JoinType.numJoinTypes();
-	    int joinMeth = RandNumb.randInt(0,numJMeth-1);
+	    //int joinMeth = RandNumb.randInt(0,numJMeth-1);
+		int joinMeth = JoinType.BLOCKNESTED;
 	    jn.setJoinType(joinMeth);
 
 	    modifyHashtable(left,jn);

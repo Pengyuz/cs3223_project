@@ -83,7 +83,7 @@ public class BlockNestedJoin extends Join{
 
             //if(right.getOpType() != OpType.SCAN){
             filenum++;
-            rfname = "NJtemp-" + String.valueOf(filenum);
+            rfname = "BNJtemp-" + String.valueOf(filenum);
             try{
                 ObjectOutputStream out = new ObjectOutputStream(new FileOutputStream(rfname));
                 while( (rightpage = right.next()) != null){
@@ -134,9 +134,12 @@ public class BlockNestedJoin extends Join{
                         break;
                     }
                     Batch  nextLeftbatch =(Batch) left.next();
-                    if(nextLeftbatch==null){
+                    if(nextLeftbatch==null && leftbatch.size() == 0){
                         eosl=true;
                         return outbatch;
+                    } else if (nextLeftbatch == null && leftbatch.size() != 0) {
+                        //eosl = true;
+                        break;
                     } else{
                         leftbatch.add(nextLeftbatch);
                     }

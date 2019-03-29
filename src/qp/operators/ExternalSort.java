@@ -18,7 +18,7 @@ public class ExternalSort extends Operator {
     int numOfBuffers;//number of avaliable buffer
     Vector<Attribute> attrset;//attributes used to compare
     int[] attrIndex;//index of comparator
-    Vector<String> fileNames;//sorted run names
+    Vector<String> fileNames = new Vector<>();//sorted run names
 
     ObjectInputStream in;
     ObjectOutputStream out;
@@ -33,7 +33,7 @@ public class ExternalSort extends Operator {
        attrIndex = new int[as.size()];
        for(int i=0;i<attrset.size();i++){
            Attribute a = attrset.get(i);
-           int index = schema.indexOf(a);
+           int index = baseSchema.indexOf(a);
            attrIndex[i] = index;
 
        }
@@ -42,6 +42,9 @@ public class ExternalSort extends Operator {
     public void doSort(){
         Boolean eof=false;
         generateSortedRuns(sourceFile);
+        for(String s:fileNames){
+            System.out.println(s);
+        }
         String finalFile = Merge(fileNames);
         try{
             in = new ObjectInputStream(new FileInputStream(finalFile));
@@ -54,7 +57,7 @@ public class ExternalSort extends Operator {
             eof=true;
 
         }catch (Exception e){
-            System.out.println(e.getMessage());
+            System.out.println(e.getMessage()+"57");
             System.exit(1);
         }
         File f = new File(finalFile);
@@ -101,7 +104,7 @@ public class ExternalSort extends Operator {
         try{
             ObjectOutputStream out = new ObjectOutputStream(new FileOutputStream(file));
         }catch (Exception e){
-            System.out.println(e.getMessage());
+            System.out.println(e.getMessage()+"104");
         }
 
         for(String s:f){
@@ -109,7 +112,7 @@ public class ExternalSort extends Operator {
                 ObjectInputStream current = new ObjectInputStream(new FileInputStream(s));
                 inputStreams.add(current);
             }catch (Exception e){
-                System.out.println(e.getMessage());
+                System.out.println(e.getMessage()+"112");
             }
         }
 
@@ -121,7 +124,7 @@ public class ExternalSort extends Operator {
                     outputBuffer = new Batch(Batch.getPageSize()/baseSchema.getTupleSize());
                 }
             }catch (Exception e){
-                System.out.println(e.getMessage());
+                System.out.println(e.getMessage()+"124");
                 System.exit(1);
             }
 
@@ -160,7 +163,7 @@ public class ExternalSort extends Operator {
                 obj.close();
             }
         }catch (Exception e){
-            System.out.println(e.getMessage());
+            System.out.println(e.getMessage()+"163");
         }
         return file;
     }
@@ -175,9 +178,9 @@ public class ExternalSort extends Operator {
         return 0;
     }
 
-    private void generateSortedRuns( String filename){
+    private void generateSortedRuns(String filename){
         runNo=0;
-        int tuplesize = schema.getTupleSize();
+        int tuplesize = baseSchema.getTupleSize();
         batchSize= Batch.getPageSize()/tuplesize;
         int numOfTuples = batchSize * numOfBuffers;
         Vector<Tuple> tuplesInRun;
@@ -192,7 +195,7 @@ public class ExternalSort extends Operator {
         } catch (Exception e) {
             System.err.println(" Error reading " + filename);
         }
-        while(!eos){
+        while(!eos || batches.size()!=0){
             try {
                 if(batches.size() == numOfBuffers){
                     //convert batches to tuples
@@ -213,6 +216,25 @@ public class ExternalSort extends Operator {
                 }else{
                     batches.add((Batch)in.readObject());
                 }
+                if(eos){
+                    //convert batches to tuples
+                    tuplesInRun = batchToTuple(batches);
+                    Collections.sort(tuplesInRun,tc);
+                    System.out.println("221");
+                    //convert tuple to batches
+                    Vector<Batch> thisRun = tupleToBatch(tuplesInRun);
+                    //write batches to file
+                    filename = "EXTTemp-"+String.valueOf(runNo);
+                    fileNames.add(filename);
+                    out = new ObjectOutputStream(new FileOutputStream(filename));
+                    for(Batch b:thisRun){
+                        out.writeObject(b);
+                    }
+                    out.close();
+                    runNo++;
+                    batches = new Vector<>();
+                }
+                System.out.println(String.valueOf(eos)+ "   " +String.valueOf(batches.size()));
 
 //                filename = "BLJTemp-"+String.valueOf(runNo);
 //                fileNames.add(filename);
@@ -221,25 +243,26 @@ public class ExternalSort extends Operator {
 //                    out.wri
 //                }
             } catch(ClassNotFoundException cnf){
-                System.err.println("Scan:Class not found for reading file  "+filename);
+                System.out.println("Scan:Class not found for reading file  "+filename);
                 System.exit(1);
             }catch (EOFException EOF) {
                 /** At this point incomplete page is sent and at next call it considered
                  ** as end of file
                  **/
                 eos=true;
+                System.out.println("should read all");
             } catch (IOException e) {
-                System.err.println("Scan:Error reading " + filename);
+                System.out.println("Scan:Error reading " + filename);
                 System.exit(1);
-            } catch (Exception e){
-                System.out.println(e.getMessage());
-            }
+           } //catch (Exception e){
+//                System.out.println(e.getStackTrace()+"235");
+//                System.exit(1);
+//            }
         }
         try{
             in.close();
-            out.close();
         }catch (Exception e){
-            System.out.println(e.getMessage());
+            System.out.println(e.getMessage()+"243");
             System.exit(1);
         }
 
@@ -266,7 +289,7 @@ public class ExternalSort extends Operator {
             System.out.println("External Sort" + ioe.getMessage());
             System.exit(1);
         }catch (Exception e){
-            System.out.println(e.getMessage());
+            System.out.println(e.getMessage()+"270");
             System.exit(1);
         }
 
@@ -339,7 +362,7 @@ public class ExternalSort extends Operator {
                     cursors.set(i,2);
                     return null;
                 }catch (Exception e){
-                    System.out.println(e.getMessage());
+                    System.out.println(e.getMessage()+"343");
                     System.exit(1);
                 }
             }

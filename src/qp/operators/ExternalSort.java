@@ -50,6 +50,8 @@ public class ExternalSort extends Operator {
             System.out.println(e.getMessage());
             System.exit(1);
         }
+        File f = new File(finalFile);
+        f.delete();
 
     }
 
@@ -69,6 +71,10 @@ public class ExternalSort extends Operator {
                     newRuns.add(newRun);
                     thisRun = new Vector<>();
                 }
+            }
+            for(String s:runs){
+                File f =new File(s);
+                f.delete();
             }
             return Merge(newRuns);
         }
@@ -256,7 +262,7 @@ public class ExternalSort extends Operator {
             System.out.println(e.getMessage());
             System.exit(1);
         }
-        
+
         return result;
     }
     private Vector<Tuple> batchToTuple(Vector<Batch> batches){

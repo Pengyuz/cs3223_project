@@ -102,6 +102,7 @@ public class ExternalSort extends Operator {
 
     }
    private String helper(Vector<String> f){
+       System.out.println("hhhere");
         int inputNum = f.size();
         if(inputNum == 1){
             return f.get(0);
@@ -129,6 +130,7 @@ public class ExternalSort extends Operator {
 
         StreamManager sm = new StreamManager(inputStreams);
         while(!sm.allEOF()){
+            System.out.println("test");
             try{
                 if(outputBuffer.isFull()){
                     out.writeObject(outputBuffer);
@@ -147,7 +149,7 @@ public class ExternalSort extends Operator {
             Tuple t = new Tuple(new Vector());
             int Index = -1;
             for(int i = 0;i<f.size();i++){
-                if(inputBuffers[i] != null &&!inputBuffers[i].isEmpty()){
+                if(inputBuffers[i] != null && !inputBuffers[i].isEmpty()){
                     t=inputBuffers[i].elementAt(0);
                     Index = i;
                     break;
@@ -370,9 +372,9 @@ public class ExternalSort extends Operator {
                 return null;
             }
             ObjectInputStream current  = allStreams.get(i);
-            if(cursors.get(i)==1){
+            if(cursors.get(i)==2){
                 return null;
-            }else if(cursors.get(i) ==0){
+            }else if(cursors.get(i) ==0 || cursors.get(i)==1){
                 try{
                     next = (Batch) current.readObject();
                     cursors.set(i,1);

@@ -30,6 +30,13 @@ public class ExternalSort extends Operator {
        this.sourceFile = filename;
        this.attrset =as;
        this.numOfBuffers = numBuff;
+       attrIndex = new int[as.size()];
+       for(int i=0;i<attrset.size();i++){
+           Attribute a = attrset.get(i);
+           int index = schema.indexOf(a);
+           attrIndex[i] = index;
+
+       }
     }
 
     public void doSort(){

@@ -305,6 +305,7 @@ public class ExternalSort extends Operator {
     private Vector<Tuple> batchToTuple(Vector<Batch> batches){
         Vector<Tuple> tuples = new Vector<>();
         for(Batch batch:batches){
+
             for(int i = 0;i<batch.size();i++){
                 tuples.add(batch.elementAt(i));
             }

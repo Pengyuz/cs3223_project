@@ -95,10 +95,15 @@ public class SortMergeJoin extends Join{
             if(!right.close())
                 return false;
         }
+
+
+
         Vector<Attribute> vsr = new Vector<>();
         vsr.add(rightattr);
         ExternalSort s = new ExternalSort(rfname, right.getSchema(), vsr, 4,numBuff);
         s.doSort();
+
+
 
         if(!left.open()){
             return false;
@@ -130,6 +135,7 @@ public class SortMergeJoin extends Join{
         vsl.add(leftattr);
         ExternalSort s2 = new ExternalSort(lfname, left.getSchema(), vsl, 4,numBuff);
         s2.doSort();
+
 
         // Scan of left and right sorted table
         try {
@@ -212,15 +218,23 @@ public class SortMergeJoin extends Join{
         return outbatch;
     }
 
-    private int advancelcurs(int lcurs, Batch leftbatch) {
-        if(leftbatch == null){
+    private int advancelcurs(int lcurs, Batch leftba) {
+        if(leftba == null){
             return -1;
         } else {
-            if(lcurs != leftbatch.size()-1){
+            if(lcurs != leftba.size()-1){
                 return lcurs+1;
             } else {
                 try {
                     leftbatch = (Batch) inl.readObject();
+                }catch(EOFException e){
+                    try{
+                        inl.close();
+                    }catch (IOException io){
+                        System.out.println("SortMerge:Error in temporary file reading");
+                    }
+                    leftbatch = null;
+                    return -1;
                 } catch (IOException e) {
                     e.printStackTrace();
                 } catch (ClassNotFoundException e) {
@@ -231,15 +245,23 @@ public class SortMergeJoin extends Join{
         }
     }
 
-    private int advancercurs(int rcurs, Batch rightbatch) {
-        if(rightbatch == null){
+    private int advancercurs(int rcurs, Batch rightba) {
+        if(rightba == null){
             return -1;
         } else {
-            if(rcurs != rightbatch.size()-1){
+            if(rcurs != rightba.size()-1){
                 return rcurs+1;
             } else {
                 try {
                     rightbatch = (Batch) inr.readObject();
+                }catch(EOFException e){
+                    try{
+                        inr.close();
+                    }catch (IOException io){
+                        System.out.println("SortMerge:Error in temporary file reading");
+                    }
+                    rightbatch = null;
+                    return -1;
                 } catch (IOException e) {
                     e.printStackTrace();
                 } catch (ClassNotFoundException e) {

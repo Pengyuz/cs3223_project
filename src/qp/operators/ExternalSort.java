@@ -217,8 +217,7 @@ public class ExternalSort extends Operator {
                     out = new ObjectOutputStream(new FileOutputStream(filename));
                     for(Batch b:thisRun){
                         out.writeObject(b);
-                        count = count + b.size();
-                        System.out.println(b.size());
+                        count = count+b.size();
                     }
                     out.close();
                     runNo++;
@@ -244,6 +243,7 @@ public class ExternalSort extends Operator {
                     out = new ObjectOutputStream(new FileOutputStream(filename));
                     for(Batch b:thisRun){
                         out.writeObject(b);
+                        count = count+b.size();
                     }
                     out.close();
                     runNo++;

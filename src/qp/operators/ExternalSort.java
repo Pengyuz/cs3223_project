@@ -66,7 +66,7 @@ public class ExternalSort extends Operator {
                     System.exit(1);
                 }
             }
-        System.out.println("65");
+        //System.out.println("65");
         File f = new File(finalFile);
         f.delete();
 
@@ -77,7 +77,7 @@ public class ExternalSort extends Operator {
         int inputNum = numOfBuffers-1;
         int outputNum = 1;
         if(runs.size()==1){
-            System.out.println("run.size =1");
+            //System.out.println("run.size =1");
             return runs.get(0);
         }else{
             Vector<String> newRuns= new Vector<>();
@@ -300,10 +300,10 @@ public class ExternalSort extends Operator {
         return result;
     }
     private Vector<Tuple> batchToTuple(Vector<Batch> batches){
-        System.out.println(batches.size()+"batchToTUPLE");
+        //System.out.println(batches.size()+"batchToTUPLE");
         Vector<Tuple> tuples = new Vector<>();
         for(Batch batch:batches){
-            System.out.println(batch.size()+"qdqwfq");
+            //System.out.println(batch.size()+"qdqwfq");
             for(int i = 0;i<batch.size();i++){
                 tuples.add(batch.elementAt(i));
             }

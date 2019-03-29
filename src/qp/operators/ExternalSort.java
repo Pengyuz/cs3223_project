@@ -23,6 +23,7 @@ public class ExternalSort extends Operator {
     ObjectInputStream in;
     ObjectOutputStream out;
     int count = 0;
+    int count1=0;
 
     boolean eos;
     public ExternalSort(String filename,Schema sc, Vector as,int type,int numBuff){
@@ -65,10 +66,14 @@ public class ExternalSort extends Operator {
                     System.exit(1);
                 }
             }
+            try{
+                out.close();
+            }catch (Exception e){
+                System.out.println(e.getMessage());
+            }
         System.out.println(count);
         File f = new File(finalFile);
         f.delete();
-        System.exit(1);
     }
 
     private String Merge(Vector<String> runs){
@@ -226,6 +231,7 @@ public class ExternalSort extends Operator {
                     try{
                         Batch present = (Batch) in.readObject();
                         batches.add(present);
+                        count1 = count1 + present.size();
                     }catch (EOFException eof){
                         eos = true;
                     }
@@ -323,6 +329,9 @@ public class ExternalSort extends Operator {
             }else{
                 present.add(tuple);
             }
+        }
+        if(!present.isEmpty()){
+            batches.add(present);
         }
         return batches;
     }

@@ -97,7 +97,7 @@ public class SortMergeJoin extends Join{
         }
         Vector<Attribute> vsr = new Vector<>();
         vsr.add(rightattr);
-        ExternalSort s = new ExternalSort(rfname, right.getSchema(), vsr, numBuff,4);
+        ExternalSort s = new ExternalSort(rfname, right.getSchema(), vsr, 4,numBuff);
         s.doSort();
 
         if(!left.open()){
@@ -114,7 +114,7 @@ public class SortMergeJoin extends Join{
             try{
                 ObjectOutputStream out2 = new ObjectOutputStream(new FileOutputStream(lfname));
                 while( (leftpage = left.next()) != null){
-                    out2.writeObject(rightpage);
+                    out2.writeObject(leftpage);
                 }
                 out2.close();
             }catch(IOException io){
@@ -127,8 +127,8 @@ public class SortMergeJoin extends Join{
         }
 
         Vector<Attribute> vsl = new Vector<>();
-        vsl.add(rightattr);
-        ExternalSort s2 = new ExternalSort(lfname, left.getSchema(), vsl, numBuff,4);
+        vsl.add(leftattr);
+        ExternalSort s2 = new ExternalSort(lfname, left.getSchema(), vsl, 4,numBuff);
         s2.doSort();
 
         // Scan of left and right sorted table

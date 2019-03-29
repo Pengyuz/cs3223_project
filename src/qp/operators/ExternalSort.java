@@ -42,24 +42,31 @@ public class ExternalSort extends Operator {
     public void doSort(){
         Boolean eof=false;
         generateSortedRuns(sourceFile);
-        for(String s:fileNames){
-            System.out.println(s);
+        for(String a:fileNames){
+            System.out.println(a);
         }
         String finalFile = Merge(fileNames);
+        System.out.println(finalFile);
         try{
             in = new ObjectInputStream(new FileInputStream(finalFile));
             out = new ObjectOutputStream(new FileOutputStream(sourceFile));
-            while(!eof){
-                Batch present =(Batch) in.readObject();
-                out.writeObject(present);
-            }
-        }catch (EOFException e){
-            eof=true;
-
         }catch (Exception e){
-            System.out.println(e.getMessage()+"57");
-            System.exit(1);
+            System.out.println(e.getMessage()+"50");
         }
+
+            while(!eof){
+                try {
+
+                    Batch present = (Batch) in.readObject();
+                    out.writeObject(present);
+                }catch (EOFException e){
+                    eof=true;
+                }catch (Exception e){
+                    System.out.println(e.getMessage()+"57");
+                    System.exit(1);
+                }
+            }
+        System.out.println("65");
         File f = new File(finalFile);
         f.delete();
 
@@ -70,6 +77,7 @@ public class ExternalSort extends Operator {
         int inputNum = numOfBuffers-1;
         int outputNum = 1;
         if(runs.size()==1){
+            System.out.println("run.size =1");
             return runs.get(0);
         }else{
             Vector<String> newRuns= new Vector<>();
@@ -99,10 +107,10 @@ public class ExternalSort extends Operator {
         Batch[] inputBuffers = new Batch[f.size()];
         Batch outputBuffer = new Batch(Batch.getPageSize()/baseSchema.getTupleSize());
         Vector<ObjectInputStream> inputStreams= new Vector<>();
-        String file = "EXTemp-"+String.valueOf(runNo);
+        String file = "EXTTemp-"+String.valueOf(runNo);
         runNo++;
         try{
-            ObjectOutputStream out = new ObjectOutputStream(new FileOutputStream(file));
+             out = new ObjectOutputStream(new FileOutputStream(file));
         }catch (Exception e){
             System.out.println(e.getMessage()+"104");
         }
@@ -214,13 +222,17 @@ public class ExternalSort extends Operator {
                     runNo++;
                     batches = new Vector<>();
                 }else{
-                    batches.add((Batch)in.readObject());
+                    try{
+                        batches.add((Batch)in.readObject());
+                    }catch (EOFException eof){
+                        eos = true;
+                    }
+
                 }
                 if(eos){
                     //convert batches to tuples
                     tuplesInRun = batchToTuple(batches);
                     Collections.sort(tuplesInRun,tc);
-                    System.out.println("221");
                     //convert tuple to batches
                     Vector<Batch> thisRun = tupleToBatch(tuplesInRun);
                     //write batches to file
@@ -234,8 +246,6 @@ public class ExternalSort extends Operator {
                     runNo++;
                     batches = new Vector<>();
                 }
-                System.out.println(String.valueOf(eos)+ "   " +String.valueOf(batches.size()));
-
 //                filename = "BLJTemp-"+String.valueOf(runNo);
 //                fileNames.add(filename);
 //                out = new ObjectOutputStream(new FileOutputStream(filename));
@@ -245,12 +255,6 @@ public class ExternalSort extends Operator {
             } catch(ClassNotFoundException cnf){
                 System.out.println("Scan:Class not found for reading file  "+filename);
                 System.exit(1);
-            }catch (EOFException EOF) {
-                /** At this point incomplete page is sent and at next call it considered
-                 ** as end of file
-                 **/
-                eos=true;
-                System.out.println("should read all");
             } catch (IOException e) {
                 System.out.println("Scan:Error reading " + filename);
                 System.exit(1);
@@ -296,8 +300,10 @@ public class ExternalSort extends Operator {
         return result;
     }
     private Vector<Tuple> batchToTuple(Vector<Batch> batches){
+        System.out.println(batches.size()+"batchToTUPLE");
         Vector<Tuple> tuples = new Vector<>();
         for(Batch batch:batches){
+            System.out.println(batch.size()+"qdqwfq");
             for(int i = 0;i<batch.size();i++){
                 tuples.add(batch.elementAt(i));
             }
@@ -342,6 +348,7 @@ public class ExternalSort extends Operator {
         StreamManager(Vector<ObjectInputStream> streams){
             allStreams = streams;
             size = allStreams.size();
+            cursors = new Vector<>();
             for(int i = 0;i<size;i++){
                 cursors.add(0);
             }

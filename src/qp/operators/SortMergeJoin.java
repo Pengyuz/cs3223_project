@@ -95,9 +95,10 @@ public class SortMergeJoin extends Join{
             if(!right.close())
                 return false;
         }
-
-        Sort s = new Sort(rfname, right.getSchema(), rightattr, numBuff,4);
-        s.sort();
+        Vector<Attribute> vsr = new Vector<>();
+        vsr.add(rightattr);
+        ExternalSort s = new ExternalSort(rfname, right.getSchema(), vsr, numBuff,4);
+        s.doSort();
 
         if(!left.open()){
             return false;
@@ -125,8 +126,10 @@ public class SortMergeJoin extends Join{
                 return false;
         }
 
-        Sort s2 = new Sort(lfname, left.getSchema(), leftattr, numBuff,4);
-        s2.sort();
+        Vector<Attribute> vsl = new Vector<>();
+        vsl.add(rightattr);
+        ExternalSort s2 = new ExternalSort(lfname, left.getSchema(), vsl, numBuff,4);
+        s2.doSort();
 
         // Scan of left and right sorted table
         try {

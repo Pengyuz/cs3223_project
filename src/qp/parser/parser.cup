@@ -37,9 +37,9 @@ action code {:
 
 /* Terminals (tokens returned by the scanner). */
 terminal 	TokenValue ID;
-terminal        COMMA,SEMI,DOT,STAR,DISTINCT;
+terminal        COMMA,SEMI,DOT,STAR, DISTINCT;
 terminal      	LESSTHAN, GREATERTHAN,LTOE,GTOE,EQUAL,NOTEQUAL,AND,OR;     
-terminal	SELECT,FROM,WHERE,GROUPBY,DISTINCT;
+terminal	SELECT,FROM,WHERE,GROUPBY;
 terminal 	TokenValue STRINGLIT;
 
 /* Non terminals */	

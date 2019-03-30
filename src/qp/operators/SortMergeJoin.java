@@ -1,4 +1,4 @@
-/** page nested join algorithm **/
+/** sort merge join algorithm **/
 
 package qp.operators;
 
@@ -13,7 +13,7 @@ public class SortMergeJoin extends Join{
     int batchsize;  //Number of tuples per out batch
 
     /** The following fields are useful during execution of
-     ** the NestedJoin operation
+     ** the SortMergJoin operation
      **/
     int leftindex;     // Index of the join attribute in left table
     int rightindex;    // Index of the join attribute in right table
@@ -26,10 +26,10 @@ public class SortMergeJoin extends Join{
     Batch outbatch;   // Output buffer
     Vector<Tuple> curEqualSetLeft;
     Vector<Tuple> curEqualSetRight;
-    Vector<Tuple> overflowTuples;   // Overflow tuples
+    Vector<Tuple> cachedEqualTuples;   // Overflowed equal tuples
     Batch leftbatch;  // Buffer for left input stream
     Batch rightbatch;  // Buffer for right input stream
-    ObjectInputStream inl;
+    ObjectInputStream inl;// File pointer to the left hand materialized file
     ObjectInputStream inr;// File pointer to the right hand materialized file
 
     int lcurs;    // Cursor for left side buffer
@@ -44,11 +44,10 @@ public class SortMergeJoin extends Join{
 
 
     /** During open finds the index of the join attributes
-     **  Materializes the right hand side into a file
+     **  Materializes both left and right hand side into a file
+     **  Perform External Sort on the two files
      **  Opens the connections
      **/
-
-
 
     public boolean open(){
 
@@ -62,9 +61,10 @@ public class SortMergeJoin extends Join{
         rightindex = right.getSchema().indexOf(rightattr);
         Batch rightpage;
         Batch leftpage;
-        /** initialize the cursors of input buffers **/
 
-        lcurs = 0; rcurs =0;
+        /** initialize the cursors of input streams **/
+        lcurs = 0;
+        rcurs =0;
 
         /** Both Left and Right hand side tables are to be materialized
          ** for the Sort Merge join to perform
@@ -73,12 +73,10 @@ public class SortMergeJoin extends Join{
         if(!right.open()){
             return false;
         }else{
-            /** If the right operator is not a base table then
-             ** Materialize the intermediate result from right
+             /** Materialize the operator from right
              ** into a file
              **/
 
-            //if(right.getOpType() != OpType.SCAN){
             filenum++;
             rfname = "SMJrtemp-" + String.valueOf(filenum);
             try{
@@ -91,13 +89,15 @@ public class SortMergeJoin extends Join{
                 System.out.println("SortMergeJoin:writing the temporay file error");
                 return false;
             }
-            //}
+
             if(!right.close())
                 return false;
         }
 
 
-
+        /** Sort the right materialized table on
+         ** given artribute sets
+         **/
         Vector<Attribute> vsr = new Vector<>();
         vsr.add(rightattr);
         ExternalSort s = new ExternalSort(rfname, right.getSchema(), vsr, 4,numBuff);
@@ -108,12 +108,10 @@ public class SortMergeJoin extends Join{
         if(!left.open()){
             return false;
         }else{
-            /** If the right operator is not a base table then
-             ** Materialize the intermediate result from right
+            /** Materialize the operator from left
              ** into a file
              **/
 
-            //if(right.getOpType() != OpType.SCAN){
             filenum++;
             lfname = "SMJltemp-" + String.valueOf(filenum);
             try{
@@ -126,18 +124,23 @@ public class SortMergeJoin extends Join{
                 System.out.println("SortMergeJoin:writing the temporay file error");
                 return false;
             }
-            //}
             if(!left.close())
                 return false;
         }
 
+
+        /** Sort the left materialized table on
+         ** given artribute sets
+         **/
         Vector<Attribute> vsl = new Vector<>();
         vsl.add(leftattr);
         ExternalSort s2 = new ExternalSort(lfname, left.getSchema(), vsl, 4,numBuff);
         s2.doSort();
 
 
-        // Scan of left and right sorted table
+        /** Scan of left and right sorted table
+         ** into inputstreams
+        **/
         try {
             inl = new ObjectInputStream(new FileInputStream(lfname));
             inr = new ObjectInputStream(new FileInputStream(rfname));
@@ -146,7 +149,7 @@ public class SortMergeJoin extends Join{
         } catch (IOException | ClassNotFoundException e) {
             e.printStackTrace();
         }
-        overflowTuples = new Vector<Tuple>();
+        cachedEqualTuples = new Vector<Tuple>();
         curEqualSetLeft = new Vector<Tuple>();
         curEqualSetRight = new Vector<Tuple>();
         return true;
@@ -156,52 +159,64 @@ public class SortMergeJoin extends Join{
 
     /** from input buffers selects the tuples satisfying join condition
      ** And returns a page of output tuples
+     ** The merge process for the join
      **/
 
 
     public Batch next(){
-        //System.out.print("SortMergeJoin:--------------------------in next----------------");
-        //Debug.PPrint(con);
-        //System.out.println();
 
-        //no more result, end of join
-        if((leftbatch == null || rightbatch == null) && overflowTuples.size() == 0){
+        /** no more matches and no more cached matched tuples, end of join
+         **/
+        if((leftbatch == null || rightbatch == null) && cachedEqualTuples.size() == 0){
             close();
             return null;
         }
         outbatch = new Batch(batchsize);
 
-        while (!outbatch.isFull() && !(overflowTuples.size() == 0)) {
-            outbatch.add(overflowTuples.remove(0));
+        /** read matched tuple from cached result if there are
+         **/
+        while (!outbatch.isFull() && !(cachedEqualTuples.size() == 0)) {
+            outbatch.add(cachedEqualTuples.remove(0));
         }
 
+        /** merge process
+         **/
         while(!outbatch.isFull() && leftbatch != null && rightbatch != null) {
             int hasmatch = Tuple.compareTuples(leftbatch.elementAt(lcurs), rightbatch.elementAt(rcurs), leftindex, rightindex);
 
             if (hasmatch == 0) {
-                curEqualSetLeft.add(leftbatch.elementAt(lcurs));
-                curEqualSetRight.add(rightbatch.elementAt(rcurs));
-                Tuple firstEqualTupleLeft = curEqualSetLeft.get(0);
-                Tuple firstEqualTupleRight = curEqualSetRight.get(0);
+                Tuple firstEqualTupleLeft = leftbatch.elementAt(lcurs);
+                Tuple firstEqualTupleRight = rightbatch.elementAt(rcurs);
+                curEqualSetLeft.add(firstEqualTupleLeft);
+                curEqualSetRight.add(firstEqualTupleRight);
+                rcurs = advancercurs(rightbatch);
+                lcurs = advancelcurs(leftbatch);
 
-                lcurs = advancelcurs(lcurs, leftbatch);
-                while (lcurs != -1 && Tuple.compareTuples(leftbatch.elementAt(lcurs),firstEqualTupleRight, leftindex, rightindex) == 0) {
-                    curEqualSetLeft.add(leftbatch.elementAt(lcurs));
-                    lcurs = advancelcurs(lcurs, leftbatch);
+
+                while (lcurs != -1) {
+                    if (Tuple.compareTuples(leftbatch.elementAt(lcurs),firstEqualTupleRight, leftindex, rightindex) == 0) {
+                        curEqualSetLeft.add(leftbatch.elementAt(lcurs));
+                        lcurs = advancelcurs(leftbatch);
+                    } else {
+                        break;
+                    }
                 }
-
-                rcurs = advancercurs(rcurs, rightbatch);
-                while (rcurs != -1 && Tuple.compareTuples(firstEqualTupleLeft,rightbatch.elementAt(rcurs), leftindex, rightindex) == 0) {
-                    curEqualSetRight.add(rightbatch.elementAt(rcurs));
-                    rcurs = advancercurs(rcurs, rightbatch);
+                while (rcurs != -1) {
+                    if (Tuple.compareTuples(firstEqualTupleLeft,rightbatch.elementAt(rcurs), leftindex, rightindex) == 0) {
+                        curEqualSetRight.add(rightbatch.elementAt(rcurs));
+                        rcurs = advancercurs(rightbatch);
+                    } else {
+                        break;
+                    }
                 }
 
                 for (Tuple tuplel : curEqualSetLeft) {
                     for (Tuple tupler : curEqualSetRight) {
-                        if (!outbatch.isFull()) {
-                            outbatch.add(tuplel.joinWith(tupler));
+                        Tuple res = tuplel.joinWith(tupler);
+                        if (outbatch.isFull()) {
+                            cachedEqualTuples.add(res);
                         } else {
-                            overflowTuples.add(tuplel.joinWith(tupler));
+                            outbatch.add(res);
                         }
                     }
                 }
@@ -210,65 +225,58 @@ public class SortMergeJoin extends Join{
                 curEqualSetRight.clear();
 
             } else if (hasmatch > 0) {
-                rcurs = advancercurs(rcurs, rightbatch);
+                rcurs = advancercurs(rightbatch);
             } else {
-                lcurs = advancelcurs(lcurs, leftbatch);
+                lcurs = advancelcurs(leftbatch);
             }
         }
         return outbatch;
     }
 
-    private int advancelcurs(int lcurs, Batch leftba) {
-        if(leftba == null){
-            return -1;
+    /** advance lcurs **/
+    private int advancelcurs(Batch leftba) {
+        if(lcurs < leftba.size() - 1){
+            return lcurs + 1;
         } else {
-            if(lcurs != leftba.size()-1){
-                return lcurs+1;
-            } else {
-                try {
-                    leftbatch = (Batch) inl.readObject();
-                }catch(EOFException e){
-                    try{
-                        inl.close();
-                    }catch (IOException io){
-                        System.out.println("SortMerge:Error in temporary file reading");
-                    }
-                    leftbatch = null;
-                    return -1;
-                } catch (IOException e) {
-                    e.printStackTrace();
-                } catch (ClassNotFoundException e) {
-                    e.printStackTrace();
+            try {
+                leftbatch = (Batch) inl.readObject();
+            }catch(EOFException e){
+                try{
+                    inl.close();
+                }catch (IOException io){
+                    System.out.println("SortMerge:Error in temporary file reading");
                 }
-                return 0;
+                leftbatch = null;
+                return -1;
+            } catch (IOException e) {
+                e.printStackTrace();
+            } catch (ClassNotFoundException e) {
+                e.printStackTrace();
             }
+            return 0;
         }
     }
-
-    private int advancercurs(int rcurs, Batch rightba) {
-        if(rightba == null){
-            return -1;
+    /** advance rcurs **/
+    private int advancercurs(Batch rightba) {
+        if(rcurs < rightba.size() - 1){
+            return rcurs + 1;
         } else {
-            if(rcurs != rightba.size()-1){
-                return rcurs+1;
-            } else {
-                try {
-                    rightbatch = (Batch) inr.readObject();
-                }catch(EOFException e){
-                    try{
-                        inr.close();
-                    }catch (IOException io){
-                        System.out.println("SortMerge:Error in temporary file reading");
-                    }
-                    rightbatch = null;
-                    return -1;
-                } catch (IOException e) {
-                    e.printStackTrace();
-                } catch (ClassNotFoundException e) {
-                    e.printStackTrace();
+            try {
+                rightbatch = (Batch) inr.readObject();
+            }catch(EOFException e){
+                try{
+                    inr.close();
+                }catch (IOException io){
+                    System.out.println("SortMerge:Error in temporary file reading");
                 }
-                return 0;
+                rightbatch = null;
+                return -1;
+            } catch (IOException e) {
+                e.printStackTrace();
+            } catch (ClassNotFoundException e) {
+                e.printStackTrace();
             }
+            return 0;
         }
     }
 
@@ -285,46 +293,3 @@ public class SortMergeJoin extends Join{
 
 
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

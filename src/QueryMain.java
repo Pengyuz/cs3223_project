@@ -16,7 +16,7 @@ public class QueryMain{
 
     public static void main(String[] args){
 	args = new String[2];
-	args[0] = "C:\\Users\\97346\\Desktop\\cs3223_project\\query6";
+	args[0] = "C:\\Users\\97346\\Desktop\\cs3223_project\\querytest";
 	args[1] = "C:\\Users\\97346\\Desktop\\cs3223_project\\out.txt";
 	if(args.length !=2){
 	    System.out.println("usage: java QueryMain <queryfilename> <resultfile>");

@@ -3,6 +3,8 @@
 package qp.operators;
 
 import qp.utils.*;
+
+import javax.swing.plaf.basic.BasicTableHeaderUI;
 import java.io.*;
 import java.util.*;
 import java.lang.*;
@@ -81,7 +83,7 @@ public class BlockNestedJoin extends Join{
 
             //if(right.getOpType() != OpType.SCAN){
             filenum++;
-            rfname = "NJtemp-" + String.valueOf(filenum);
+            rfname = "BNJtemp-" + String.valueOf(filenum);
             try{
                 ObjectOutputStream out = new ObjectOutputStream(new FileOutputStream(rfname));
                 while( (rightpage = right.next()) != null){
@@ -121,20 +123,24 @@ public class BlockNestedJoin extends Join{
         outbatch = new Batch(batchsize);
 
         int inputBufferNum = numBuff -2;
-        leftbatch = new Vector<>(inputBufferNum);
+
         while(!outbatch.isFull()){
 
             if(lcurs==0 && eosr==true){
                 /** new left page is to be fetched**/
+                leftbatch = new Vector<>(inputBufferNum);
                 while(true){
-                    Batch  nextLeftbatch =(Batch) left.next();
-                    if(nextLeftbatch==null){
-                        eosl=true;
-                        return outbatch;
-                    }else if(leftbatch.size() == inputBufferNum){
+                    if(leftbatch.size() == inputBufferNum){
                         break;
                     }
-                    else{
+                    Batch  nextLeftbatch =(Batch) left.next();
+                    if(nextLeftbatch==null && leftbatch.size() == 0){
+                        eosl=true;
+                        return outbatch;
+                    } else if (nextLeftbatch == null && leftbatch.size() != 0) {
+                        //eosl = true;
+                        break;
+                    } else{
                         leftbatch.add(nextLeftbatch);
                     }
 
@@ -154,16 +160,16 @@ public class BlockNestedJoin extends Join{
 
             }
 
+Vector<Tuple> tuplesInInputBuffer = batchToTuple(leftbatch);
             while(eosr==false){
 
                 try{
                     if(rcurs==0 && lcurs==0){
                         rightbatch = (Batch) in.readObject();
                     }
-for(Batch nextLeftBatch:leftbatch){
-                    for(i=lcurs;i<nextLeftBatch.size();i++){
+                    for(i=lcurs;i<tuplesInInputBuffer.size();i++){
                         for(j=rcurs;j<rightbatch.size();j++){
-                            Tuple lefttuple = nextLeftBatch.elementAt(i);
+                            Tuple lefttuple = tuplesInInputBuffer.elementAt(i);
                             Tuple righttuple = rightbatch.elementAt(j);
                             if(lefttuple.checkJoin(righttuple,leftindex,rightindex)){
                                 Tuple outtuple = lefttuple.joinWith(righttuple);
@@ -172,13 +178,13 @@ for(Batch nextLeftBatch:leftbatch){
                                 //System.out.println();
                                 outbatch.add(outtuple);
                                 if(outbatch.isFull()){
-                                    if(i==nextLeftBatch.size()-1 && j==rightbatch.size()-1){//case 1
+                                    if(i==tuplesInInputBuffer.size()-1 && j==rightbatch.size()-1){//case 1
                                         lcurs=0;
                                         rcurs=0;
-                                    }else if(i!=nextLeftBatch.size()-1 && j==rightbatch.size()-1){//case 2
+                                    }else if(i!=tuplesInInputBuffer.size()-1 && j==rightbatch.size()-1){//case 2
                                         lcurs = i+1;
                                         rcurs = 0;
-                                    }else if(i==nextLeftBatch.size()-1 && j!=rightbatch.size()-1){//case 3
+                                    }else if(i==tuplesInInputBuffer.size()-1 && j!=rightbatch.size()-1){//case 3
                                         lcurs = i;
                                         rcurs = j+1;
                                     }else{
@@ -191,7 +197,7 @@ for(Batch nextLeftBatch:leftbatch){
                         }
                         rcurs =0;
                     }
-}
+
                     lcurs=0;
                 }catch(EOFException e){
                     try{
@@ -210,6 +216,16 @@ for(Batch nextLeftBatch:leftbatch){
             }
         }
         return outbatch;
+    }
+
+    private Vector<Tuple> batchToTuple(Vector<Batch> batches){
+        Vector<Tuple> tuples = new Vector<>();
+        for(Batch batch:batches){
+            for(int i = 0;i<batch.size();i++){
+                tuples.add(batch.elementAt(i));
+            }
+        }
+        return tuples;
     }
 
 

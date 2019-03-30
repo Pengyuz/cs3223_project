@@ -17,7 +17,7 @@ public class Attribute implements Serializable{
     public static final int FK=2;   // Foreign key
 
 
-    String tblname;        //tabel to which this attribute belongs
+    String tblname;        //table to which this attribute belongs
     String colname;         //name of the attribute **/
     int type;  // whether integer or real or string
     int key=-1;   // type of the key

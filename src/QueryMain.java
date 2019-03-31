@@ -73,7 +73,7 @@ public class QueryMain{
 
 	SQLQuery sqlquery = p.getSQLQuery();
 	int numJoin = sqlquery.getNumJoin();
-	int numGroupby = sqlquery.getGroupByList().size();
+	int numGroupby = (sqlquery.getGroupByList()==null? 0 : sqlquery.getGroupByList().size());
 
 
 	/** If there are joins then assigns buffers to each join operator

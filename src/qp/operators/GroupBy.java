@@ -236,7 +236,7 @@ public class GroupBy extends Operator{
         for(int i=0;i<attrSet.size();i++)
             newattr.add((Attribute) ((Attribute)attrSet.elementAt(i)).clone());
         GroupBy newproj = new GroupBy(newbase,newattr,optype);
-        Schema newSchema = newbase.getSchema().subSchema(newattr);
+        Schema newSchema = newbase.getSchema();
         newproj.setSchema(newSchema);
         return newproj;
     }

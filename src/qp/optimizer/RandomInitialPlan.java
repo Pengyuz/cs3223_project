@@ -59,11 +59,22 @@ public class RandomInitialPlan{
 	    createJoinOp();
 	}
 	createProjectOp();
+	createGroupByOp();
 	return root;
     }
 
 
+	public void createGroupByOp(){
+		Operator base = root;
+		if ( groupbylist == null )
+			groupbylist = new Vector();
 
+		if(!groupbylist.isEmpty()){
+			root = new GroupBy(base,groupbylist,OpType.GROUPBY);
+			Schema newSchema = base.getSchema();
+			root.setSchema(newSchema);
+		}
+	}
 
 
     /** Create Scan Operator for each of the table
@@ -173,8 +184,8 @@ public class RandomInitialPlan{
 	    jn.setSchema(newsche);
 	    /** randomly select a join type**/
 	    int numJMeth = JoinType.numJoinTypes();
-	    //int joinMeth = RandNumb.randInt(0,numJMeth-1);
-		int joinMeth = JoinType.SORTMERGE;
+	    int joinMeth = RandNumb.randInt(0,numJMeth-1);
+		//int joinMeth = JoinType.SORTMERGE;
 	    jn.setJoinType(joinMeth);
 
 	    modifyHashtable(left,jn);

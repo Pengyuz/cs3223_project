@@ -58,6 +58,12 @@ public class SortMergeJoin extends Join{
         Attribute leftattr = con.getLhs();
         Attribute rightattr =(Attribute) con.getRhs();
         leftindex = left.getSchema().indexOf(leftattr);
+        if (leftindex == -1) {
+            Attribute tmp = leftattr;
+            leftattr = rightattr;
+            rightattr = tmp;
+        }
+        leftindex = left.getSchema().indexOf(leftattr);
         rightindex = right.getSchema().indexOf(rightattr);
         Batch rightpage;
         Batch leftpage;

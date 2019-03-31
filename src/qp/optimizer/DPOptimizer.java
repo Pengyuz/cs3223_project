@@ -69,6 +69,7 @@ public class DPOptimizer{
             createJoinOp();
         }
         createProjectOp();
+        createGroupByOp();
         return root;
     }
     public void buildEdgeList(){
@@ -82,10 +83,23 @@ public class DPOptimizer{
             leftNb.add(rightTab);
             edgeList.put(leftTab,leftNb);
             Vector<String> rightNb = edgeList.get(rightTab);
-            rightNb.add(rightTab);
+            rightNb.add(leftTab);
             edgeList.put(rightTab,rightNb);
         }
     }
+
+    public void createGroupByOp(){
+        Operator base = root;
+        if ( groupbylist == null )
+            groupbylist = new Vector();
+
+        if(!groupbylist.isEmpty()){
+            root = new GroupBy(base,groupbylist,OpType.GROUPBY);
+            Schema newSchema = base.getSchema();
+            root.setSchema(newSchema);
+        }
+    }
+
 
 
 
@@ -175,53 +189,13 @@ public class DPOptimizer{
 
     public void createJoinOp(){
 
-
-//        BitSet bitCList = new BitSet(numJoin);
-//        int jnnum = RandNumb.randInt(0,numJoin-1);
-//        Join jn=null;
-//        /** Repeat until all the join conditions are considered **/
-//        while(bitCList.cardinality() != numJoin){
-//            /** If this condition is already consider chose
-//             ** another join condition
-//             **/
-//
-//            while(bitCList.get(jnnum)){
-//                jnnum = RandNumb.randInt(0,numJoin-1);
-//            }
-//            Condition cn = (Condition) joinlist.elementAt(jnnum);
-//            String lefttab = cn.getLhs().getTabName();
-//            String righttab = ((Attribute) cn.getRhs()).getTabName();
-//
-//            // System.out.println("---------JOIN:---------left X right"+lefttab+righttab);
-//
-//            Operator left = (Operator) tab_op_hash.get(lefttab);
-//            Operator right = (Operator) tab_op_hash.get(righttab);
-//            jn = new Join(left,right,cn,OpType.JOIN);
-//            jn.setNodeIndex(jnnum);
-//            Schema newsche = left.getSchema().joinWith(right.getSchema());
-//            jn.setSchema(newsche);
-//            /** randomly select a join type**/
-//            int numJMeth = JoinType.numJoinTypes();
-//            //int joinMeth = RandNumb.randInt(0,numJMeth-1);
-//            int joinMeth = JoinType.SORTMERGE;
-//            jn.setJoinType(joinMeth);
-//
-//            modifyHashtable(left,jn);
-//            modifyHashtable(right,jn);
-//            //tab_op_hash.put(lefttab,jn);
-//            //tab_op_hash.put(righttab,jn);
-//
-//            bitCList.set(jnnum);
-//        }
-        /** The last join operation is the root for the
-         ** constructed till now
-         **/
-
         if(numJoin !=0)
             root = DP();
     }
 
     public Operator getOptimizedPlan() {
+        PlanCost pc = new PlanCost();
+        MINCOST  = pc.getCost(root);
         System.out.println("\n\n\n");
         System.out.println("---------------------------Final Plan----------------");
         Debug.PPrint(root);
@@ -430,7 +404,12 @@ public class DPOptimizer{
             Operator base = makeExecPlan(((Project)node).getBase());
             ((Project)node).setBase(base);
             return node;
-        }else{
+        }else if(node.getOpType() == OpType.GROUPBY){
+            Operator base  = makeExecPlan(((GroupBy)node).getBase());
+            ((GroupBy)node).setBase(base);
+            return node;
+        }
+        else{
             return node;
         }
     }

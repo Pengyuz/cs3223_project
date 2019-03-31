@@ -15,10 +15,11 @@ public class QueryMain{
     static int numAtts;
 
     public static void main(String[] args){
-	args = new String[2];
-	args[0] = "C:\\Users\\97346\\Desktop\\cs3223_project\\querytest";
-	args[1] = "C:\\Users\\97346\\Desktop\\cs3223_project\\out.txt";
-	if(args.length !=2){
+	args = new String[3];
+	args[0] = "queryGB";
+	args[1] = "outGBRo.txt";
+	args[2]  ="outGBDP.txt";
+	if(args.length !=3){
 	    System.out.println("usage: java QueryMain <queryfilename> <resultfile>");
 	    System.exit(1);
 	}
@@ -42,6 +43,7 @@ public class QueryMain{
 
 	String queryfile = args[0];
 	String resultfile = args[1];
+	String resultfile1 = args[2];
 	FileInputStream source = null;
 	try{
 	   source = new FileInputStream(queryfile);
@@ -71,6 +73,7 @@ public class QueryMain{
 
 	SQLQuery sqlquery = p.getSQLQuery();
 	int numJoin = sqlquery.getNumJoin();
+	int numGroupby = (sqlquery.getGroupByList()==null? 0 : sqlquery.getGroupByList().size());
 
 
 	/** If there are joins then assigns buffers to each join operator
@@ -81,7 +84,7 @@ public class QueryMain{
 	**/
 
 
-	if(numJoin !=0){
+	if(numJoin !=0 || numGroupby!=0){
 	    System.out.println("enter the number of buffers available");
 
 	    try {
@@ -91,17 +94,21 @@ public class QueryMain{
 	    } catch (Exception e) {
 		e.printStackTrace();
 	 }
+
+		/** Let check the number of buffers available is enough or not **/
+		if (numJoin != 0) {
+			int numBuff = BufferManager.getBuffersPerJoin();
+			if(numJoin>0 && numBuff<3){
+				System.out.println("Minimum 3 buffers are required per a join operator ");
+				System.exit(1);
+			}
+		}
+
 	}
 
 
 
-	/** Let check the number of buffers available is enough or not **/
 
-	int numBuff = BufferManager.getBuffersPerJoin();
-	if(numJoin>0 && numBuff<3){
-	    System.out.println("Minimum 3 buffers are required per a join operator ");
-	    System.exit(1);
-	}
 
 
 
@@ -125,20 +132,33 @@ public class QueryMain{
 	RandomOptimizer ro = new RandomOptimizer(sqlquery);
 	Operator logicalroot = ro.getOptimizedPlan();
 	if(logicalroot==null){
-	    System.out.println("root is null");
-	    System.exit(1);
+		System.out.println("root is null");
+		System.exit(1);
 	}
+
+	DPOptimizer  dp = new DPOptimizer(sqlquery);
+		dp.prepareInitialPlan();
+	Operator dpRoot = dp.getOptimizedPlan();
+	if(dpRoot == null){
+		System.out.println("root is null");
+		System.exit(1);
+	}
+		Operator DProot = DPOptimizer.makeExecPlan(dpRoot);
 
 
 
 	/** preparing the execution plan **/
 
-	Operator root = RandomOptimizer.makeExecPlan(logicalroot);
+	Operator Roroot = RandomOptimizer.makeExecPlan(logicalroot);
 
 /** Print final Plan **/
-	System.out.println("----------------------Execution Plan----------------");
-	Debug.PPrint(root);
+	System.out.println("----------------------Execution Plan for Rondom----------------");
+	Debug.PPrint(Roroot);
 	System.out.println();
+
+		System.out.println("----------------------Execution Plan for DP----------------");
+		Debug.PPrint(DProot);
+		System.out.println();
 
 
 /** Ask user whether to continue execution of the program **/
@@ -157,11 +177,11 @@ System.out.println("enter 1 to continue, 0 to abort ");
 		e.printStackTrace();
 	 }
 
-long starttime = System.currentTimeMillis();
+long starttime1 = System.currentTimeMillis();
 
 
 
-	if(root.open()==false){
+	if(Roroot.open()==false){
 	    System.out.println("Root: Error in opening of root");
 	    System.exit(1);
 	}
@@ -176,7 +196,7 @@ long starttime = System.currentTimeMillis();
 
 
 	/** print the schema of the result **/
-	Schema schema = root.getSchema();
+	Schema schema = Roroot.getSchema();
 	numAtts = schema.getNumCols();
 	printSchema(schema);
 	Batch resultbatch;
@@ -185,17 +205,58 @@ long starttime = System.currentTimeMillis();
 	/** print each tuple in the result **/
 
 
-	while((resultbatch=root.next())!=null){
+	while((resultbatch=Roroot.next())!=null){
 	    for(int i=0;i<resultbatch.size();i++){
 		printTuple(resultbatch.elementAt(i));
 	    }
 	}
-	root.close();
+		Roroot.close();
 	out.close();
 
-long endtime = System.currentTimeMillis();
-double executiontime = (endtime - starttime)/1000.0;
-System.out.println("Execution time = "+ executiontime);
+long endtime1 = System.currentTimeMillis();
+double executiontime1 = (endtime1 - starttime1)/1000.0;
+System.out.println("Execution time = "+ executiontime1);
+//-------------------------------------------------------------------
+		long starttime2 = System.currentTimeMillis();
+
+
+
+		if(DProot.open()==false){
+			System.out.println("Root: Error in opening of root");
+			System.exit(1);
+		}
+		try{
+			out = new PrintWriter(new BufferedWriter(new FileWriter(resultfile1)));
+		}catch(IOException io){
+			System.out.println("QueryMain:error in opening result file: "+resultfile1);
+			System.exit(1);
+		}
+
+
+
+
+		/** print the schema of the result **/
+		Schema schemadp = DProot.getSchema();
+		numAtts = schemadp.getNumCols();
+		printSchema(schemadp);
+		Batch resultbatchDp;
+
+
+		/** print each tuple in the result **/
+
+
+		while((resultbatchDp=DProot.next())!=null){
+			for(int i=0;i<resultbatchDp.size();i++){
+				printTuple(resultbatchDp.elementAt(i));
+			}
+		}
+		DProot.close();
+		out.close();
+
+		long endtime2 = System.currentTimeMillis();
+		double executiontime2 = (endtime2 - starttime2)/1000.0;
+		System.out.println("Execution time = "+ executiontime2);
+
 
     }
 

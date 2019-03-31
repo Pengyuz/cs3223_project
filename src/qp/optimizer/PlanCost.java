@@ -5,6 +5,9 @@ package qp.optimizer;
 
 import qp.operators.*;
 import qp.utils.*;
+import sun.awt.image.IntegerComponentRaster;
+
+import java.nio.Buffer;
 import java.util.Hashtable;
 import java.util.StringTokenizer;
 import java.util.Enumeration;
@@ -71,7 +74,9 @@ public class PlanCost{
 	    return getStatistics((Project)node);
 	}else if(node.getOpType() == OpType.SCAN){
 	    return getStatistics((Scan)node);
-
+	}
+	else if(node.getOpType()==OpType.GROUPBY){
+		return getStatistics((GroupBy)node);
 	}
 	return -1;
     }
@@ -140,14 +145,15 @@ public class PlanCost{
 	int joincost;
 
 	//System.out.println("PlanCost: jointype="+joinType);
-
+		System.out.println("size " + leftpages + " " + rightpages);
 	switch(joinType){
 	case JoinType.NESTEDJOIN:
 	    joincost = leftpages*rightpages;
 	    break;
 	case JoinType.BLOCKNESTED:
+
 	    joincost = (int) (leftpages+ Math.ceil((double)leftpages / (double)numbuff) * rightpages);
-	    break;
+		break;
 	case JoinType.SORTMERGE:
 		int numpassl = (int) (1 + Math.ceil( (double)Math.log(Math.ceil((double)leftpages/numbuff))/Math.log(numbuff-1)));
 		int numpass2 = (int) (1 + Math.ceil( (double)Math.log(Math.ceil((double)rightpages/numbuff))/Math.log(numbuff-1)));
@@ -220,6 +226,21 @@ public class PlanCost{
 	//System.out.println("PlanCost: line 164: outtuples="+outtuples);
 	return outtuples;
     }
+
+    protected  int getStatistics(GroupBy node){
+		int intuples = calculateCost(node.getBase());
+		if(isFeasible == false){
+			return Integer.MAX_VALUE;
+		}
+		Schema baseSchema = node.getBase().getSchema();
+		int tupleSize = baseSchema.getTupleSize();
+		int numBuff = BufferManager.numBuffer;
+		int inPages = (int) Math.ceil(((double) intuples/(double)tupleSize));
+
+		int sortCost = (int) (1+Math.ceil(((double)Math.log(Math.ceil((double)inPages/numBuff))/Math.log(numBuff-1))));
+		cost = cost + sortCost;
+		return intuples;
+	}
 
 
 

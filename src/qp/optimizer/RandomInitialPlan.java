@@ -59,11 +59,22 @@ public class RandomInitialPlan{
 	    createJoinOp();
 	}
 	createProjectOp();
+	//createGroupByOp();
 	return root;
     }
 
 
+	public void createGroupByOp(){
+		Operator base = root;
+		if ( groupbylist == null )
+			groupbylist = new Vector();
 
+		if(!groupbylist.isEmpty()){
+			root = new GroupBy(base,groupbylist,OpType.GROUPBY);
+			Schema newSchema = base.getSchema();
+			root.setSchema(newSchema);
+		}
+	}
 
 
     /** Create Scan Operator for each of the table

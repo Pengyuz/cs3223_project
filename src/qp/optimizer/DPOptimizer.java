@@ -69,7 +69,7 @@ public class DPOptimizer{
             createJoinOp();
         }
         createProjectOp();
-        createGroupByOp();
+        //createGroupByOp();
         return root;
     }
     public void buildEdgeList(){
@@ -93,7 +93,7 @@ public class DPOptimizer{
         if ( groupbylist == null )
             groupbylist = new Vector();
 
-        if(!projectlist.isEmpty()){
+        if(!groupbylist.isEmpty()){
             root = new GroupBy(base,groupbylist,OpType.GROUPBY);
             Schema newSchema = base.getSchema();
             root.setSchema(newSchema);

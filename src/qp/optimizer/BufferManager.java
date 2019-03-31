@@ -16,11 +16,11 @@ public class BufferManager{
     public BufferManager(int numBuffer, int numJoin){
 	this.numBuffer = numBuffer;
 	this.numJoin = numJoin;
-	buffPerJoin = numBuffer/numJoin;
+	//buffPerJoin = numBuffer/numJoin;
     }
 
     public static int getBuffersPerJoin(){
-	return buffPerJoin;
+	return numBuffer/numJoin;
     }
 
     public static int getAllAvailableBuffers(){

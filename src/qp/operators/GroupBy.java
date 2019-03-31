@@ -25,7 +25,7 @@ public class GroupBy extends Operator{
     ObjectInputStream in;// File pointer to the sorted materialized file
     Vector<Tuple> cachedSameGroupTuples;
     int[] attrIndex;
-
+    Tuple lastTuple = null;
     public GroupBy(Operator base, Vector as,int type){
         super(type);
         this.base=base;
@@ -131,18 +131,22 @@ public class GroupBy extends Operator{
             return null;
         }
         outbatch = new Batch(batchsize);
-        Tuple lastTuple = null;
+
+        while (!outbatch.isFull() && !(cachedSameGroupTuples.size() == 0)) {
+            outbatch.add(cachedSameGroupTuples.remove(0));
+        }
 
         while (!outbatch.isFull() && inbatch != null) {
             if (curIndex == -2) {
-                Tuple cur = inbatch.elementAt(curIndex +2);
-                lastTuple = cur;
+                lastTuple = inbatch.elementAt(curIndex +2);
                 curIndex++;
                 curIndex++;
-                outbatch.add(cur);
+                outbatch.add(lastTuple);
             }
             curIndex = advanceCurIndex(inbatch);
-
+            if (curIndex == -1) {
+                break;
+            }
             int compareRes = compareTuplesInIndexs(lastTuple, inbatch.elementAt(curIndex), attrIndex);
 
             if (compareRes == 0) { //same group
@@ -152,13 +156,25 @@ public class GroupBy extends Operator{
                 } else {
                     cachedSameGroupTuples.add(toAdd);
                 }
+                lastTuple = toAdd;
             } else { // new group
                 Vector<String> empties = new Vector<>();
-                for (int i = 0; i < attrSet.size(); i++) {
+                for (int i = 0; i < base.getSchema().getAttList().size(); i++) {
                     empties.add("");
                 }
                 Tuple dummy = new Tuple(empties);
-                outbatch.add(dummy);
+                if (!outbatch.isFull()) {
+                    outbatch.add(dummy);
+                } else {
+                    cachedSameGroupTuples.add(dummy);
+                }
+                lastTuple = inbatch.elementAt(curIndex);
+                if (!outbatch.isFull()) {
+                    outbatch.add(lastTuple);
+                } else {
+                    cachedSameGroupTuples.add(lastTuple);
+                }
+                curIndex = advanceCurIndex(inbatch);
             }
         }
 

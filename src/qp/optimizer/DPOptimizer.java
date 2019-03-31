@@ -69,6 +69,7 @@ public class DPOptimizer{
             createJoinOp();
         }
         createProjectOp();
+        createGroupByOp();
         return root;
     }
     public void buildEdgeList(){
@@ -86,6 +87,19 @@ public class DPOptimizer{
             edgeList.put(rightTab,rightNb);
         }
     }
+
+    public void createGroupByOp(){
+        Operator base = root;
+        if ( groupbylist == null )
+            groupbylist = new Vector();
+
+        if(!projectlist.isEmpty()){
+            root = new GroupBy(base,groupbylist,OpType.GROUPBY);
+            Schema newSchema = base.getSchema();
+            root.setSchema(newSchema);
+        }
+    }
+
 
 
 
@@ -430,7 +444,12 @@ public class DPOptimizer{
             Operator base = makeExecPlan(((Project)node).getBase());
             ((Project)node).setBase(base);
             return node;
-        }else{
+        }else if(node.getOpType() == OpType.GROUPBY){
+            Operator base  = makeExecPlan(((GroupBy)node).getBase());
+            ((GroupBy)node).setBase(base);
+            return node;
+        }
+        else{
             return node;
         }
     }

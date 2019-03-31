@@ -160,7 +160,7 @@ public class RandomOptimizer{
 	    }
 	}
 	System.out.println("\n\n\n");
-	System.out.println("---------------------------Final Plan:RD----------------");
+	System.out.println("---------------------------Final Plan----------------");
 	Debug.PPrint(finalPlan);
 	System.out.println("  "+MINCOST);
 	return finalPlan;
@@ -358,11 +358,10 @@ public class RandomOptimizer{
 	    return findNodeAt(((Select)node).getBase(),joinNum);
 	}else if(node.getOpType()==OpType.PROJECT){
 	    return findNodeAt(((Project)node).getBase(),joinNum);
-	} else if (node.getOpType() == OpType.DISTINCT) {
-		return findNodeAt(((Distinct)node).getBase(),joinNum);
 	}else if(node.getOpType()==OpType.GROUPBY){
 		return findNodeAt(((GroupBy)node).getBase(),joinNum);
-	}else{
+	}
+	else{
 	    return null;
 	}
     }
@@ -389,12 +388,8 @@ public class RandomOptimizer{
 	    modifySchema(base);
 	    Vector attrlist = ((Project)node).getProjAttr();
 	    node.setSchema(base.getSchema().subSchema(attrlist));
-	} else if(node.getOpType() == OpType.DISTINCT) {
-		Operator base = ((Distinct)node).getBase();
-    modifySchema(base);
-		node.setSchema(base.getSchema());
-	}else if(node.getOpType() == OpType.GROUPBY){
-		Operator base  = ((GroupBy)node).getBase();
+	}else if(node.getOpType()==OpType.GROUPBY){
+		Operator base= ((GroupBy)node).getBase();
 		modifySchema(base);
 		node.setSchema(base.getSchema());
 	}
@@ -406,14 +401,13 @@ public class RandomOptimizer{
 		prepare an execution plan by replacing the methods with
 		corresponding join operator implementation
 			**/
+
     public static Operator makeExecPlan(Operator node){
 
 	if(node.getOpType()==OpType.JOIN){
 	    Operator left = makeExecPlan(((Join)node).getLeft());
 	    Operator right = makeExecPlan(((Join)node).getRight());
-	    //int joinType = ((Join)node).getJoinType();
-		int joinType = JoinType.SORTMERGE;
-		((Join) node).setJoinType(joinType);
+	    int joinType = ((Join)node).getJoinType();
 	    int numbuff = BufferManager.getBuffersPerJoin();
 	    switch(joinType){
 	    case JoinType.NESTEDJOIN:
@@ -429,18 +423,14 @@ public class RandomOptimizer{
 
 	    case JoinType.BLOCKNESTED:
 
-		BlockNestedJoin bj = new BlockNestedJoin((Join) node);
-		bj.setLeft(left);
-		bj.setRight(right);
-		bj.setNumBuff(numbuff);
+		NestedJoin bj = new NestedJoin((Join) node);
+                /* + other code */
 		return bj;
 
 	    case JoinType.SORTMERGE:
 
-		SortMergeJoin sm = new SortMergeJoin((Join) node);
-		sm.setLeft(left);
-		sm.setRight(right);
-		sm.setNumBuff(numbuff);
+		NestedJoin sm = new NestedJoin((Join) node);
+                /* + other code */
 		return sm;
 
 	    case JoinType.HASHJOIN:
@@ -460,16 +450,13 @@ public class RandomOptimizer{
 	    ((Project)node).setBase(base);
 	    return node;
 	}else if(node.getOpType() == OpType.GROUPBY){
-		Operator base =  makeExecPlan(((GroupBy)node).getBase());
-		((GroupBy)node).setBase((base));
+		Operator base = makeExecPlan(((GroupBy)node).getBase());
+		((GroupBy)node).setBase(base);
 		return node;
-	} else if (node.getOpType() == OpType.DISTINCT) {
-			Operator base = makeExecPlan(((Distinct) node).getBase());
-			((Distinct) node).setBase(base);
-			return node;
-		}else{
+	}else{
 	    return node;
 	}
+    }
 }
 
 

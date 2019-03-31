@@ -358,7 +358,9 @@ public class RandomOptimizer{
 	    return findNodeAt(((Select)node).getBase(),joinNum);
 	}else if(node.getOpType()==OpType.PROJECT){
 	    return findNodeAt(((Project)node).getBase(),joinNum);
-	}else{
+	} else if (node.getOpType() == OpType.DISTINCT) {
+		return findNodeAt(((Distinct)node).getBase(),joinNum);
+	}else {
 	    return null;
 	}
     }
@@ -385,6 +387,10 @@ public class RandomOptimizer{
 	    modifySchema(base);
 	    Vector attrlist = ((Project)node).getProjAttr();
 	    node.setSchema(base.getSchema().subSchema(attrlist));
+	} else if(node.getOpType() == OpType.DISTINCT) {
+		Operator base = ((Distinct)node).getBase();
+		modifySchema(base);
+		node.setSchema(base.getSchema());
 	}
     }
 
@@ -395,62 +401,66 @@ public class RandomOptimizer{
 		corresponding join operator implementation
 			**/
 
-    public static Operator makeExecPlan(Operator node){
+    public static Operator makeExecPlan(Operator node) {
 
-	if(node.getOpType()==OpType.JOIN){
-	    Operator left = makeExecPlan(((Join)node).getLeft());
-	    Operator right = makeExecPlan(((Join)node).getRight());
-	    //int joinType = ((Join)node).getJoinType();
-		int joinType = JoinType.SORTMERGE;
-	    int numbuff = BufferManager.getBuffersPerJoin();
-	    switch(joinType){
-	    case JoinType.NESTEDJOIN:
+		if (node.getOpType() == OpType.JOIN) {
+			Operator left = makeExecPlan(((Join) node).getLeft());
+			Operator right = makeExecPlan(((Join) node).getRight());
+			//int joinType = ((Join)node).getJoinType();
+			int joinType = JoinType.SORTMERGE;
+			int numbuff = BufferManager.getBuffersPerJoin();
+			switch (joinType) {
+				case JoinType.NESTEDJOIN:
 
-		NestedJoin nj = new NestedJoin((Join) node);
-		nj.setLeft(left);
-		nj.setRight(right);
-		nj.setNumBuff(numbuff);
-		return nj;
+					NestedJoin nj = new NestedJoin((Join) node);
+					nj.setLeft(left);
+					nj.setRight(right);
+					nj.setNumBuff(numbuff);
+					return nj;
 
-	    /** Temporarity used simple nested join,
-	    	replace with hasjoin, if implemented **/
+				/** Temporarity used simple nested join,
+				 replace with hasjoin, if implemented **/
 
-	    case JoinType.BLOCKNESTED:
+				case JoinType.BLOCKNESTED:
 
-		BlockNestedJoin bj = new BlockNestedJoin((Join) node);
-		bj.setLeft(left);
-		bj.setRight(right);
-		bj.setNumBuff(numbuff);
-		return bj;
+					BlockNestedJoin bj = new BlockNestedJoin((Join) node);
+					bj.setLeft(left);
+					bj.setRight(right);
+					bj.setNumBuff(numbuff);
+					return bj;
 
-	    case JoinType.SORTMERGE:
+				case JoinType.SORTMERGE:
 
-		SortMergeJoin sm = new SortMergeJoin((Join) node);
-		sm.setLeft(left);
-		sm.setRight(right);
-		sm.setNumBuff(numbuff);
-		return sm;
+					SortMergeJoin sm = new SortMergeJoin((Join) node);
+					sm.setLeft(left);
+					sm.setRight(right);
+					sm.setNumBuff(numbuff);
+					return sm;
 
-	    case JoinType.HASHJOIN:
+				case JoinType.HASHJOIN:
 
-		NestedJoin hj = new NestedJoin((Join) node);
-                /* + other code */
-		return hj;
-	    default:
-		return node;
-	    }
-	}else if(node.getOpType() == OpType.SELECT){
-	    Operator base = makeExecPlan(((Select)node).getBase());
-	    ((Select)node).setBase(base);
-	    return node;
-	}else if(node.getOpType() == OpType.PROJECT){
-	    Operator base = makeExecPlan(((Project)node).getBase());
-	    ((Project)node).setBase(base);
-	    return node;
-	}else{
-	    return node;
+					NestedJoin hj = new NestedJoin((Join) node);
+					/* + other code */
+					return hj;
+				default:
+					return node;
+			}
+		} else if (node.getOpType() == OpType.SELECT) {
+			Operator base = makeExecPlan(((Select) node).getBase());
+			((Select) node).setBase(base);
+			return node;
+		} else if (node.getOpType() == OpType.PROJECT) {
+			Operator base = makeExecPlan(((Project) node).getBase());
+			((Project) node).setBase(base);
+			return node;
+		} else if (node.getOpType() == OpType.DISTINCT) {
+			Operator base = makeExecPlan(((Distinct) node).getBase());
+			((Distinct) node).setBase(base);
+			return node;
+		} else {
+			return node;
+		}
 	}
-    }
 }
 
 

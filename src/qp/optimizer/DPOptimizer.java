@@ -188,12 +188,14 @@ public class DPOptimizer{
     /** create join operators **/
 
     public void createJoinOp(){
-        
+
         if(numJoin !=0)
             root = DP();
     }
 
     public Operator getOptimizedPlan() {
+        PlanCost pc = new PlanCost();
+        MINCOST  = pc.getCost(root);
         System.out.println("\n\n\n");
         System.out.println("---------------------------Final Plan----------------");
         Debug.PPrint(root);

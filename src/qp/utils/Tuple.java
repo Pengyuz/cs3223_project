@@ -83,20 +83,30 @@ public class Tuple implements Serializable {
 
 
 	public static int compareTuplesInIndexs( Tuple left,Tuple right, int[] indexs){
-		Object leftdata = left.dataAt(leftIndex);
-		Object rightdata = right.dataAt(rightIndex);
-		if(leftdata instanceof Integer){
-			return ((Integer)leftdata).compareTo((Integer)rightdata);
-		}else if(leftdata instanceof String){
-			return ((String)leftdata).compareTo((String)rightdata);
-
-		}else if(leftdata instanceof Float){
-			return ((Float)leftdata).compareTo((Float)rightdata);
-		}else{
-			System.out.println("Tuple: Unknown comparision of the tuples");
-			System.exit(1);
-			return 0;
+    	if(indexs.length==0){
+    		return 0;
 		}
+    	for(int i=0;i<indexs.length;i++){
+    		if(compareTuples(left,right,indexs[i])!=0){
+    			return 1;
+			}
+		}
+    	return 0;
+
+//		Object leftdata = left.dataAt(leftIndex);
+//		Object rightdata = right.dataAt(rightIndex);
+//		if(leftdata instanceof Integer){
+//			return ((Integer)leftdata).compareTo((Integer)rightdata);
+//		}else if(leftdata instanceof String){
+//			return ((String)leftdata).compareTo((String)rightdata);
+//
+//		}else if(leftdata instanceof Float){
+//			return ((Float)leftdata).compareTo((Float)rightdata);
+//		}else{
+//			System.out.println("Tuple: Unknown comparision of the tuples");
+//			System.exit(1);
+//			return 0;
+//		}
 	}
 
 

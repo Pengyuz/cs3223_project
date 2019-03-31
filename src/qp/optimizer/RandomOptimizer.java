@@ -385,6 +385,10 @@ public class RandomOptimizer{
 	    modifySchema(base);
 	    Vector attrlist = ((Project)node).getProjAttr();
 	    node.setSchema(base.getSchema().subSchema(attrlist));
+	}else if(node.getOpType() == OpType.GROUPBY){
+		Operator base  = ((GroupBy)node).getBase();
+		modifySchema(base);
+		node.setSchema(base.getSchema());
 	}
     }
 
@@ -447,6 +451,10 @@ public class RandomOptimizer{
 	    Operator base = makeExecPlan(((Project)node).getBase());
 	    ((Project)node).setBase(base);
 	    return node;
+	}else if(node.getOpType() == OpType.GROUPBY){
+		Operator base =  makeExecPlan(((GroupBy)node).getBase());
+		((GroupBy)node).setBase((base));
+		return node;
 	}else{
 	    return node;
 	}

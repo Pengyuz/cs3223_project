@@ -3,6 +3,7 @@
 package qp.operators;
 
 import qp.utils.*;
+import sun.java2d.windows.GDIRenderer;
 
 public class Debug{
 
@@ -111,6 +112,11 @@ public class Debug{
 
 	}else if(optype==OpType.SCAN){
 	    System.out.print(((Scan)node).getTabName());
+	}
+	else if(optype == OpType.GROUPBY){
+		System.out.println("GROUPBY(");
+		PPrint(((GroupBy)node).getBase());
+		System.out.println(")");
 	}
     }
 

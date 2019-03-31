@@ -58,7 +58,14 @@ public class BlockNestedJoin extends Join{
         Attribute leftattr = con.getLhs();
         Attribute rightattr =(Attribute) con.getRhs();
         leftindex = left.getSchema().indexOf(leftattr);
+        if (leftindex == -1) {
+            Attribute tmp = leftattr;
+            leftattr = rightattr;
+            rightattr = tmp;
+        }
+        leftindex = left.getSchema().indexOf(leftattr);
         rightindex = right.getSchema().indexOf(rightattr);
+
         Batch rightpage;
         /** initialize the cursors of input buffers **/
 
@@ -145,7 +152,6 @@ public class BlockNestedJoin extends Join{
                     }
 
                 }
-
                 /** Whenver a new left page came , we have to start the
                  ** scanning of right table
                  **/
@@ -160,7 +166,7 @@ public class BlockNestedJoin extends Join{
 
             }
 
-Vector<Tuple> tuplesInInputBuffer = batchToTuple(leftbatch);
+            Vector<Tuple> tuplesInInputBuffer = batchToTuple(leftbatch);
             while(eosr==false){
 
                 try{

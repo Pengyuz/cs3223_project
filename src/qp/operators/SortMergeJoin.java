@@ -64,7 +64,7 @@ public class SortMergeJoin extends Join{
             rightattr = tmp;
         }
         leftindex = left.getSchema().indexOf(leftattr);
-        rightindex = right.getSchema().indexOf(leftattr);
+        rightindex = right.getSchema().indexOf(rightattr);
         Batch rightpage;
         Batch leftpage;
 

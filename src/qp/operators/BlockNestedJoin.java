@@ -135,7 +135,7 @@ public class BlockNestedJoin extends Join{
 
             if(lcurs==0 && eosr==true){
                 /** new left page is to be fetched**/
-                leftbatch = new Vector<>(inputBufferNum);
+                leftbatch = new Vector<>();
                 while(true){
                     if(leftbatch.size() == inputBufferNum){
                         break;

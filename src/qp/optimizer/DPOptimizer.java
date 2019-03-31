@@ -83,7 +83,7 @@ public class DPOptimizer{
             leftNb.add(rightTab);
             edgeList.put(leftTab,leftNb);
             Vector<String> rightNb = edgeList.get(rightTab);
-            rightNb.add(rightTab);
+            rightNb.add(leftTab);
             edgeList.put(rightTab,rightNb);
         }
     }

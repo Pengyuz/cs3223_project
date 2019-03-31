@@ -180,6 +180,7 @@ public class RandomInitialPlan{
 	    Operator right = (Operator) tab_op_hash.get(righttab);
 	    jn = new Join(left,right,cn,OpType.JOIN);
 	    jn.setNodeIndex(jnnum);
+
 	    Schema newsche = left.getSchema().joinWith(right.getSchema());
 	    jn.setSchema(newsche);
 	    /** randomly select a join type**/

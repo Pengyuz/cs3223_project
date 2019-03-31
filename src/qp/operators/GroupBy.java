@@ -219,7 +219,7 @@ public class GroupBy extends Operator{
     /** Close the operator */
     public boolean close(){
         File f = new File(filename);
-        //f.delete();
+        f.delete();
         return true;
 		/*
 	if(base.close())

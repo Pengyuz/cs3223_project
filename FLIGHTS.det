@@ -4,5 +4,5 @@ flno INTEGER 10000 PK 4
 from STRING 10 NK 20
 to STRING 10 NK 20
 distance INTEGER 3000 NK 4
-departs FLOAT 24 NK 4
-arrives FLOAT 24 NK 4
+departs INTEGER 24 NK 4
+arrives INTEGER 24 NK 4

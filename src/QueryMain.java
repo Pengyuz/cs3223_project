@@ -16,9 +16,9 @@ public class QueryMain{
 
     public static void main(String[] args){
 	args = new String[3];
-	args[0] = "C:\\Users\\97346\\Desktop\\cs3223_project\\querytest";
-	args[1] = "C:\\Users\\97346\\Desktop\\cs3223_project\\outRo.txt";
-	args[2]  ="C:\\Users\\97346\\Desktop\\cs3223_project\\outDP.txt";
+	args[0] = "queryGB";
+	args[1] = "outGBRo.txt";
+	args[2]  ="outGBDP.txt";
 	if(args.length !=3){
 	    System.out.println("usage: java QueryMain <queryfilename> <resultfile>");
 	    System.exit(1);
@@ -94,17 +94,21 @@ public class QueryMain{
 	    } catch (Exception e) {
 		e.printStackTrace();
 	 }
+
+		/** Let check the number of buffers available is enough or not **/
+		if (numJoin != 0) {
+			int numBuff = BufferManager.getBuffersPerJoin();
+			if(numJoin>0 && numBuff<3){
+				System.out.println("Minimum 3 buffers are required per a join operator ");
+				System.exit(1);
+			}
+		}
+
 	}
 
 
 
-	/** Let check the number of buffers available is enough or not **/
 
-	int numBuff = BufferManager.getBuffersPerJoin();
-	if(numJoin>0 && numBuff<3){
-	    System.out.println("Minimum 3 buffers are required per a join operator ");
-	    System.exit(1);
-	}
 
 
 
@@ -213,45 +217,45 @@ long endtime1 = System.currentTimeMillis();
 double executiontime1 = (endtime1 - starttime1)/1000.0;
 System.out.println("Execution time = "+ executiontime1);
 //-------------------------------------------------------------------
-		long starttime2 = System.currentTimeMillis();
-
-
-
-		if(DProot.open()==false){
-			System.out.println("Root: Error in opening of root");
-			System.exit(1);
-		}
-		try{
-			out = new PrintWriter(new BufferedWriter(new FileWriter(resultfile1)));
-		}catch(IOException io){
-			System.out.println("QueryMain:error in opening result file: "+resultfile1);
-			System.exit(1);
-		}
-
-
-
-
-		/** print the schema of the result **/
-		Schema schemadp = DProot.getSchema();
-		numAtts = schemadp.getNumCols();
-		printSchema(schemadp);
-		Batch resultbatchDp;
-
-
-		/** print each tuple in the result **/
-
-
-		while((resultbatchDp=DProot.next())!=null){
-			for(int i=0;i<resultbatchDp.size();i++){
-				printTuple(resultbatchDp.elementAt(i));
-			}
-		}
-		DProot.close();
-		out.close();
-
-		long endtime2 = System.currentTimeMillis();
-		double executiontime2 = (endtime2 - starttime2)/1000.0;
-		System.out.println("Execution time = "+ executiontime2);
+//		long starttime2 = System.currentTimeMillis();
+//
+//
+//
+//		if(DProot.open()==false){
+//			System.out.println("Root: Error in opening of root");
+//			System.exit(1);
+//		}
+//		try{
+//			out = new PrintWriter(new BufferedWriter(new FileWriter(resultfile1)));
+//		}catch(IOException io){
+//			System.out.println("QueryMain:error in opening result file: "+resultfile1);
+//			System.exit(1);
+//		}
+//
+//
+//
+//
+//		/** print the schema of the result **/
+//		Schema schemadp = DProot.getSchema();
+//		numAtts = schemadp.getNumCols();
+//		printSchema(schemadp);
+//		Batch resultbatchDp;
+//
+//
+//		/** print each tuple in the result **/
+//
+//
+//		while((resultbatchDp=DProot.next())!=null){
+//			for(int i=0;i<resultbatchDp.size();i++){
+//				printTuple(resultbatchDp.elementAt(i));
+//			}
+//		}
+//		DProot.close();
+//		out.close();
+//
+//		long endtime2 = System.currentTimeMillis();
+//		double executiontime2 = (endtime2 - starttime2)/1000.0;
+//		System.out.println("Execution time = "+ executiontime2);
 
 
     }

@@ -160,7 +160,7 @@ public class RandomOptimizer{
 	    }
 	}
 	System.out.println("\n\n\n");
-	System.out.println("---------------------------Final Plan----------------");
+	System.out.println("---------------------------Final Plan:RD----------------");
 	Debug.PPrint(finalPlan);
 	System.out.println("  "+MINCOST);
 	return finalPlan;
@@ -358,6 +358,8 @@ public class RandomOptimizer{
 	    return findNodeAt(((Select)node).getBase(),joinNum);
 	}else if(node.getOpType()==OpType.PROJECT){
 	    return findNodeAt(((Project)node).getBase(),joinNum);
+	}else if(node.getOpType()==OpType.GROUPBY){
+		return findNodeAt(((GroupBy)node).getBase(),joinNum);
 	}else{
 	    return null;
 	}
@@ -405,7 +407,8 @@ public class RandomOptimizer{
 	    Operator left = makeExecPlan(((Join)node).getLeft());
 	    Operator right = makeExecPlan(((Join)node).getRight());
 	    //int joinType = ((Join)node).getJoinType();
-		int joinType = JoinType.BLOCKNESTED;
+		int joinType = JoinType.SORTMERGE;
+		((Join) node).setJoinType(joinType);
 	    int numbuff = BufferManager.getBuffersPerJoin();
 	    switch(joinType){
 	    case JoinType.NESTEDJOIN:

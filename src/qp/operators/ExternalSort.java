@@ -44,9 +44,7 @@ public class ExternalSort extends Operator {
     public void doSort(){
         Boolean eof=false;
         generateSortedRuns(sourceFile);
-        System.out.println("here");
         String finalFile = Merge(fileNames);
-        System.out.println("hhere");
         try{
             in = new ObjectInputStream(new FileInputStream(finalFile));
             out = new ObjectOutputStream(new FileOutputStream(sourceFile));
@@ -62,16 +60,16 @@ public class ExternalSort extends Operator {
                 }catch (EOFException e){
                     eof=true;
                 }catch (Exception e){
-                    System.out.println(e.getMessage()+"57");
+                    System.out.println(e.getMessage());
                     System.exit(1);
                 }
             }
             try{
+                in.close();
                 out.close();
             }catch (Exception e){
                 System.out.println(e.getMessage());
             }
-        System.out.println(count);
         File f = new File(finalFile);
         f.delete();
     }

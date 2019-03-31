@@ -217,45 +217,45 @@ long endtime1 = System.currentTimeMillis();
 double executiontime1 = (endtime1 - starttime1)/1000.0;
 System.out.println("Execution time = "+ executiontime1);
 //-------------------------------------------------------------------
-//		long starttime2 = System.currentTimeMillis();
-//
-//
-//
-//		if(DProot.open()==false){
-//			System.out.println("Root: Error in opening of root");
-//			System.exit(1);
-//		}
-//		try{
-//			out = new PrintWriter(new BufferedWriter(new FileWriter(resultfile1)));
-//		}catch(IOException io){
-//			System.out.println("QueryMain:error in opening result file: "+resultfile1);
-//			System.exit(1);
-//		}
-//
-//
-//
-//
-//		/** print the schema of the result **/
-//		Schema schemadp = DProot.getSchema();
-//		numAtts = schemadp.getNumCols();
-//		printSchema(schemadp);
-//		Batch resultbatchDp;
-//
-//
-//		/** print each tuple in the result **/
-//
-//
-//		while((resultbatchDp=DProot.next())!=null){
-//			for(int i=0;i<resultbatchDp.size();i++){
-//				printTuple(resultbatchDp.elementAt(i));
-//			}
-//		}
-//		DProot.close();
-//		out.close();
-//
-//		long endtime2 = System.currentTimeMillis();
-//		double executiontime2 = (endtime2 - starttime2)/1000.0;
-//		System.out.println("Execution time = "+ executiontime2);
+		long starttime2 = System.currentTimeMillis();
+
+
+
+		if(DProot.open()==false){
+			System.out.println("Root: Error in opening of root");
+			System.exit(1);
+		}
+		try{
+			out = new PrintWriter(new BufferedWriter(new FileWriter(resultfile1)));
+		}catch(IOException io){
+			System.out.println("QueryMain:error in opening result file: "+resultfile1);
+			System.exit(1);
+		}
+
+
+
+
+		/** print the schema of the result **/
+		Schema schemadp = DProot.getSchema();
+		numAtts = schemadp.getNumCols();
+		printSchema(schemadp);
+		Batch resultbatchDp;
+
+
+		/** print each tuple in the result **/
+
+
+		while((resultbatchDp=DProot.next())!=null){
+			for(int i=0;i<resultbatchDp.size();i++){
+				printTuple(resultbatchDp.elementAt(i));
+			}
+		}
+		DProot.close();
+		out.close();
+
+		long endtime2 = System.currentTimeMillis();
+		double executiontime2 = (endtime2 - starttime2)/1000.0;
+		System.out.println("Execution time = "+ executiontime2);
 
 
     }

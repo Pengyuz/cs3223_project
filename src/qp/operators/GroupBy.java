@@ -174,7 +174,6 @@ public class GroupBy extends Operator{
                 } else {
                     cachedSameGroupTuples.add(lastTuple);
                 }
-                curIndex = advanceCurIndex(inbatch);
             }
         }
 

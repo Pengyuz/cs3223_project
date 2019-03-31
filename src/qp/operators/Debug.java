@@ -114,9 +114,9 @@ public class Debug{
 	    System.out.print(((Scan)node).getTabName());
 	}
 	else if(optype == OpType.GROUPBY){
-		System.out.println("GROUPBY(");
+		System.out.print("GROUPBY(");
 		PPrint(((GroupBy)node).getBase());
-		System.out.println(")");
+		System.out.print(")");
 	}
     }
 

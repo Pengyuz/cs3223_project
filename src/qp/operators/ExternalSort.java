@@ -40,8 +40,6 @@ public class ExternalSort extends Operator {
     }
 
     public void doSort(){
-        int count = 0;
-        int count1= 0;
         Boolean eof=false;
         generateSortedRuns(sourceFile);
         String finalFile = Merge(fileNames);
@@ -52,26 +50,62 @@ public class ExternalSort extends Operator {
             System.out.println(e.getMessage()+"50");
         }
 
-            while(!eof){
-                try {
+        while(!eof){
+            try {
 
-                    Batch present = (Batch) in.readObject();
-                    count1 = count1+present.size();
-                    count = count + present.size();
-                    out.writeObject(present);
-                }catch (EOFException e){
-                    eof=true;
-                }catch (Exception e){
-                    System.out.println(e.getMessage());
-                    System.exit(1);
-                }
-            }
-            try{
-                in.close();
-                out.close();
+                Batch present = (Batch) in.readObject();
+                out.writeObject(present);
+            }catch (EOFException e){
+                eof=true;
             }catch (Exception e){
                 System.out.println(e.getMessage());
+                System.exit(1);
             }
+        }
+        try{
+            in.close();
+            out.close();
+        }catch (Exception e){
+            System.out.println(e.getMessage());
+        }
+        File f = new File(finalFile);
+        f.delete();
+    }
+    public void doSortForDistinct(){
+        Boolean eof=false;
+        if(attrIndex.length==0){
+            attrIndex = new int[baseSchema.getNumCols()];
+            for(int i=0;i<attrIndex.length;i++){
+                attrIndex[i] = i;
+            }
+        }
+        generateSortedRuns(sourceFile);
+        String finalFile = Merge(fileNames);
+        try{
+            in = new ObjectInputStream(new FileInputStream(finalFile));
+            out = new ObjectOutputStream(new FileOutputStream(sourceFile));
+        }catch (Exception e){
+            System.out.println(e.getMessage()+"50");
+        }
+
+        while(!eof){
+            try {
+
+                Batch present = (Batch) in.readObject();
+                out.writeObject(present);
+            }catch (EOFException e){
+                eof=true;
+            }catch (Exception e){
+                System.out.println(e.getMessage());
+                System.exit(1);
+            }
+        }
+        try{
+            in.close();
+            out.close();
+        }catch (Exception e){
+            System.out.println(e.getMessage());
+        }
         File f = new File(finalFile);
         f.delete();
     }
@@ -102,7 +136,6 @@ public class ExternalSort extends Operator {
 
     }
    private String helper(Vector<String> f){
-        int counter = 0;
         int inputNum = f.size();
         if(inputNum == 1){
             return f.get(0);
@@ -134,7 +167,6 @@ public class ExternalSort extends Operator {
             try{
                 if(outputBuffer.isFull()||(sm.allEOF()&&index==-1&&!outputBuffer.isEmpty())){
                     out.writeObject(outputBuffer);
-                    counter+= outputBuffer.size();
                     outputBuffer = new Batch(Batch.getPageSize()/baseSchema.getTupleSize());
                 }
             }catch (Exception e){
@@ -194,9 +226,6 @@ public class ExternalSort extends Operator {
 
     private void generateSortedRuns(String filename){
         runNo=0;
-        int count = 0;
-        int count1 = 0;
-        int count2=0;
         int tuplesize = baseSchema.getTupleSize();
         batchSize= Batch.getPageSize()/tuplesize;
         int numOfTuples = batchSize * numOfBuffers;
@@ -228,7 +257,6 @@ public class ExternalSort extends Operator {
                     out = new ObjectOutputStream(new FileOutputStream(filename));
                     for(Batch b:thisRun){
                         out.writeObject(b);
-                        count = count+b.size();
                     }
                     out.close();
                     runNo++;
@@ -254,7 +282,6 @@ public class ExternalSort extends Operator {
                     out = new ObjectOutputStream(new FileOutputStream(filename));
                     for(Batch b:thisRun){
                         out.writeObject(b);
-                        count = count+b.size();
                     }
                     out.close();
                     runNo++;
@@ -361,7 +388,6 @@ public class ExternalSort extends Operator {
         private Vector<ObjectInputStream> allStreams;
         private Vector<Integer> cursors;
         private int size;
-        int count;
         StreamManager(Vector<ObjectInputStream> streams){
             allStreams = streams;
             size = allStreams.size();
@@ -369,7 +395,6 @@ public class ExternalSort extends Operator {
             for(int i = 0;i<size;i++){
                 cursors.add(0);
             }
-            count = 0;
         }
         public Batch getNext(int i){
             Batch next = new Batch(Batch.getPageSize()/baseSchema.getTupleSize());
@@ -383,7 +408,6 @@ public class ExternalSort extends Operator {
                 try{
                     next = (Batch) current.readObject();
                     cursors.set(i,1);
-                    count = count + next.size();
                 }catch (EOFException e){
                     cursors.set(i,2);
                     return null;

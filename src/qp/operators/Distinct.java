@@ -22,10 +22,11 @@ public class Distinct extends Operator{
     static int filenum=0;   // To get unique filenum for this operation
     String filename;
     int numbuffer;
+
     ObjectInputStream in;// File pointer to the sorted materialized file
-    Vector<Tuple> cachedSameGroupTuples;
-    int[] attrIndex;
+    Vector<Tuple> cachedTuples;
     Tuple lastTuple = null;
+
     public Distinct(Operator base, Vector as,int type){
         super(type);
         this.base=base;
@@ -49,34 +50,12 @@ public class Distinct extends Operator{
         return attrSet;
     }
 
-
     /** Opens the connection to the base operator
-     ** Also figures out what are the columns to be
-     ** grouped from the base operator
      **/
     public boolean open(){
         /** setnumber of tuples per batch **/
         int tuplesize = schema.getTupleSize();
         batchsize=Batch.getPageSize()/tuplesize;
-
-        try{
-            Schema baseSchema = base.getSchema();
-            attrIndex = new int[attrSet.size()];
-            //System.out.println("Project---Schema: ----------in open-----------");
-            //System.out.println("base Schema---------------");
-            //Debug.PPrint(baseSchema);
-            for(int i=0;i<attrSet.size();i++){
-                Attribute attr = (Attribute) attrSet.elementAt(i);
-                int index = baseSchema.indexOf(attr);
-                attrIndex[i]=index;
-
-                //  Debug.PPrint(attr);
-                //System.out.println("  "+index+"  ");
-            }
-        } catch(ArrayIndexOutOfBoundsException e){
-            System.out.println("array index out of bound.");
-            return false;
-        }
 
         Batch nextpage;
 
@@ -88,7 +67,7 @@ public class Distinct extends Operator{
              **/
 
             filenum++;
-            filename = "GrpBytemp-" + String.valueOf(filenum);
+            filename = "Disdincttemp-" + String.valueOf(filenum);
             try{
                 ObjectOutputStream out = new ObjectOutputStream(new FileOutputStream(filename));
                 while( (nextpage = base.next()) != null){
@@ -105,7 +84,7 @@ public class Distinct extends Operator{
         }
 
         ExternalSort s = new ExternalSort(filename, base.getSchema(), attrSet, 4, numbuffer);
-        s.doSort();
+        s.doSortForDistinct();
 
         /** Scan of sorted table
          ** into inputstreams
@@ -118,7 +97,7 @@ public class Distinct extends Operator{
         } catch (IOException | ClassNotFoundException e) {
             e.printStackTrace();
         }
-        cachedSameGroupTuples = new Vector<Tuple>();
+        cachedTuples = new Vector<Tuple>();
         curIndex = -2;
 
         return true;
@@ -126,19 +105,19 @@ public class Distinct extends Operator{
 
     public Batch next(){
 
-        if(inbatch == null && cachedSameGroupTuples.size() == 0){
+        if(inbatch == null && cachedTuples.size() == 0){
             close();
             return null;
         }
         outbatch = new Batch(batchsize);
 
-        while (!outbatch.isFull() && !(cachedSameGroupTuples.size() == 0)) {
-            outbatch.add(cachedSameGroupTuples.remove(0));
+        while (!outbatch.isFull() && !(cachedTuples.size() == 0)) {
+            outbatch.add(cachedTuples.remove(0));
         }
 
         while (!outbatch.isFull() && inbatch != null) {
             if (curIndex == -2) {
-                lastTuple = inbatch.elementAt(curIndex +2);
+                lastTuple = inbatch.elementAt(curIndex + 2);
                 curIndex++;
                 curIndex++;
                 outbatch.add(lastTuple);
@@ -147,45 +126,30 @@ public class Distinct extends Operator{
             if (curIndex == -1) {
                 break;
             }
-            int compareRes = compareTuplesInIndexs(lastTuple, inbatch.elementAt(curIndex), attrIndex);
+            int compareRes = compareTuples(lastTuple, inbatch.elementAt(curIndex));
 
-            if (compareRes == 0) { //same group
+            if (compareRes == 0) { //duplicate
+                continue;
+            } else { // to add
                 Tuple toAdd = inbatch.elementAt(curIndex);
                 if (!outbatch.isFull()) {
                     outbatch.add(toAdd);
                 } else {
-                    cachedSameGroupTuples.add(toAdd);
+                    cachedTuples.add(toAdd);
+                    return outbatch;
                 }
                 lastTuple = toAdd;
-            } else { // new group
-                Vector<String> empties = new Vector<>();
-                for (int i = 0; i < base.getSchema().getAttList().size(); i++) {
-                    empties.add("");
-                }
-                Tuple dummy = new Tuple(empties);
-                if (!outbatch.isFull()) {
-                    outbatch.add(dummy);
-                } else {
-                    cachedSameGroupTuples.add(dummy);
-                }
-                lastTuple = inbatch.elementAt(curIndex);
-                if (!outbatch.isFull()) {
-                    outbatch.add(lastTuple);
-                } else {
-                    cachedSameGroupTuples.add(lastTuple);
-                }
             }
         }
-
         return outbatch;
     }
 
-    private int compareTuplesInIndexs( Tuple left,Tuple right, int[] indexs){
-        if(indexs.length==0){
-            return 0;
+    private int compareTuples( Tuple left,Tuple right){
+        if(left.data().size()==0 || right.data().size() == 0 || left.data().size() != right.data().size()){
+            return 1;
         }
-        for(int i=0;i<indexs.length;i++){
-            if(Tuple.compareTuples(left,right,indexs[i])!=0){
+        for(int i=0;i<left.data().size(); i++){
+            if(Tuple.compareTuples(left,right,i) != 0){
                 return 1;
             }
         }
@@ -236,7 +200,7 @@ public class Distinct extends Operator{
         for(int i=0;i<attrSet.size();i++)
             newattr.add((Attribute) ((Attribute)attrSet.elementAt(i)).clone());
         Distinct newproj = new Distinct(newbase,newattr,optype);
-        Schema newSchema = newbase.getSchema().subSchema(newattr);
+        Schema newSchema = newbase.getSchema();
         newproj.setSchema(newSchema);
         return newproj;
     }

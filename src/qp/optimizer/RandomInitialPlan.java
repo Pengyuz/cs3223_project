@@ -20,6 +20,7 @@ public class RandomInitialPlan{
     Vector selectionlist;     //List of select conditons
     Vector joinlist;          //List of join conditions
     Vector groupbylist;
+    boolean isDistinct;
     int numJoin;    // Number of joins in this query
 
 
@@ -36,6 +37,7 @@ public class RandomInitialPlan{
 	joinlist = sqlquery.getJoinList();
 	groupbylist = sqlquery.getGroupByList();
 	numJoin = joinlist.size();
+	isDistinct = sqlquery.isDistinct();
 
 
     }
@@ -59,10 +61,24 @@ public class RandomInitialPlan{
 	    createJoinOp();
 	}
 	createProjectOp();
-	createGroupByOp();
+	if(isDistinct) {
+		createDistinctOp();
+	}
+	if (groupbylist != null && groupbylist.size() != 0){
+		createGroupByOp();
+	}
 	return root;
     }
 
+	public void createDistinctOp() {
+		Operator base = root;
+		if ( projectlist == null )
+			projectlist = new Vector();
+
+		root = new Distinct(base, projectlist, OpType.DISTINCT);
+		Schema newSchema = base.getSchema();
+		root.setSchema(newSchema);
+	}
 
 	public void createGroupByOp(){
 		Operator base = root;

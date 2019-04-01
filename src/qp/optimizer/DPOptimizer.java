@@ -20,6 +20,7 @@ public class DPOptimizer{
     Vector selectionlist;     //List of select conditons
     Vector joinlist;          //List of join conditions
     Vector groupbylist;
+    boolean isDistinct;
     int numJoin;    // Number of joins in this query
     int MINCOST;
 
@@ -39,6 +40,7 @@ public class DPOptimizer{
         joinlist = sqlquery.getJoinList();
         groupbylist = sqlquery.getGroupByList();
         numJoin = joinlist.size();
+        isDistinct = sqlquery.isDistinct();
         edgeList = new  HashMap<String,Vector<String>>();
         for(int i = 0;i<fromlist.size();i++){
             Vector<String> neighbors = new Vector<>();
@@ -69,7 +71,13 @@ public class DPOptimizer{
             createJoinOp();
         }
         createProjectOp();
-        createGroupByOp();
+        if(isDistinct) {
+            createDistinctOp();
+        }
+        if (groupbylist != null && groupbylist.size() != 0){
+            createGroupByOp();
+        }
+
         return root;
     }
     public void buildEdgeList(){
@@ -87,6 +95,18 @@ public class DPOptimizer{
             edgeList.put(rightTab,rightNb);
         }
     }
+
+
+    public void createDistinctOp() {
+        Operator base = root;
+        if ( projectlist == null )
+            projectlist = new Vector();
+
+        root = new Distinct(base, projectlist, OpType.DISTINCT);
+        Schema newSchema = base.getSchema();
+        root.setSchema(newSchema);
+    }
+
 
     public void createGroupByOp(){
         Operator base = root;
@@ -407,6 +427,10 @@ public class DPOptimizer{
         }else if(node.getOpType() == OpType.GROUPBY){
             Operator base  = makeExecPlan(((GroupBy)node).getBase());
             ((GroupBy)node).setBase(base);
+            return node;
+        } else if(node.getOpType() == OpType.DISTINCT){
+            Operator base  = makeExecPlan(((Distinct)node).getBase());
+            ((Distinct)node).setBase(base);
             return node;
         }
         else{

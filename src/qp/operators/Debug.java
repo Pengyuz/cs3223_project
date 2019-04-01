@@ -118,6 +118,11 @@ public class Debug{
 		PPrint(((GroupBy)node).getBase());
 		System.out.print(")");
 	}
+	else if(optype == OpType.DISTINCT){
+		System.out.print("DISTINCT(");
+		PPrint(((Distinct)node).getBase());
+		System.out.print(")");
+	}
     }
 
 

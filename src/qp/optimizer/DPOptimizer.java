@@ -352,12 +352,13 @@ public class DPOptimizer{
 
             //rest conditions act as filters
             for (Condition c: cons) {
-                c.setExprType(Condition.SELECT);
+                c.setExprType(Condition.EQUAL);
+                c.setOpType(Condition.JOIN);
                 Select sop = new Select(tempop,c, OpType.SELECT);
                 sop.setSchema(tempop.getSchema());
                 tempop = sop;
             }
-            
+
             PlanCost p = new PlanCost();
             int finalcost = p.getCost(tempop);
             return new Plan(tempop, finalcost);

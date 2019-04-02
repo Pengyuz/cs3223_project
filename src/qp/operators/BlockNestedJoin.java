@@ -15,7 +15,7 @@ public class BlockNestedJoin extends Join{
     int batchsize;  //Number of tuples per out batch
 
     /** The following fields are useful during execution of
-     ** the NestedJoin operation
+     ** the BlockNested operation
      **/
     int leftindex;     // Index of the join attribute in left table
     int rightindex;    // Index of the join attribute in right table
@@ -47,8 +47,6 @@ public class BlockNestedJoin extends Join{
      **  Opens the connections
      **/
 
-
-
     public boolean open(){
 
         /** select number of tuples per batch **/
@@ -77,7 +75,7 @@ public class BlockNestedJoin extends Join{
         eosr=true;
 
         /** Right hand side table is to be materialized
-         ** for the Nested join to perform
+         ** for the BlockNested join to perform
          **/
 
         if(!right.open()){
@@ -88,7 +86,6 @@ public class BlockNestedJoin extends Join{
              ** into a file
              **/
 
-            //if(right.getOpType() != OpType.SCAN){
             filenum++;
             rfname = "BNJtemp-" + String.valueOf(filenum);
             try{
@@ -98,10 +95,9 @@ public class BlockNestedJoin extends Join{
                 }
                 out.close();
             }catch(IOException io){
-                System.out.println("NestedJoin:writing the temporay file error");
+                System.out.println("BlockNested:writing the temporay file error");
                 return false;
             }
-            //}
             if(!right.close())
                 return false;
         }
@@ -119,9 +115,6 @@ public class BlockNestedJoin extends Join{
 
 
     public Batch next(){
-        //System.out.print("NestedJoin:--------------------------in next----------------");
-        //Debug.PPrint(con);
-        //System.out.println();
         int i,j;
         if(eosl){
             close();
@@ -134,7 +127,7 @@ public class BlockNestedJoin extends Join{
         while(!outbatch.isFull()){
 
             if(lcurs==0 && eosr==true){
-                /** new left page is to be fetched**/
+                /** new left block of pages is to be fetched**/
                 leftbatch = new Vector<>();
                 while(true){
                     if(leftbatch.size() == inputBufferNum){

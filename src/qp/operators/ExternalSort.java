@@ -14,7 +14,7 @@ public class ExternalSort extends Operator {
     int numOfBuffers;//number of avaliable buffer
     Vector<Attribute> attrset;//attributes used to compare
     int[] attrIndex;//index of comparator
-    Vector<String> fileNames = new Vector<>();//sorted run names
+    Vector<String> fileNames = new Vector<>();// stores the names of temp files for sorted run names
 
     ObjectInputStream in;
     ObjectOutputStream out;
@@ -27,6 +27,9 @@ public class ExternalSort extends Operator {
        this.attrset =as;
        this.numOfBuffers = numBuff;
        attrIndex = new int[as.size()];
+        /**Find the indexes of the attributes used to
+         *  sort the runs.
+         */
        for(int i=0;i<attrset.size();i++){
            Attribute a = attrset.get(i);
            int index = baseSchema.indexOf(a);
@@ -34,11 +37,18 @@ public class ExternalSort extends Operator {
        }
 
     }
-
+/** dosort is called by Groupby Operator and SortMergeJoin Operator
+ * to sort tables.
+ */
     public void doSort(){
         Boolean eof=false;
-        generateSortedRuns(sourceFile);
-        String finalFile = Merge(fileNames);
+        generateSortedRuns(sourceFile); // thsi step generate sorted run
+        String finalFile = Merge(fileNames);//this step merge the sorted runs
+        /**The following steps read from the temp file that sotres all the
+         * sorted result, and write them into the source file provided by
+         * External Operator and Groupby Operator.
+         *
+         */
         try{
             in = new ObjectInputStream(new FileInputStream(finalFile));
             out = new ObjectOutputStream(new FileOutputStream(sourceFile));
@@ -67,6 +77,12 @@ public class ExternalSort extends Operator {
         File f = new File(finalFile);
         f.delete();
     }
+
+    /**
+     * Most of the functionality of doSortForDistinct are similar to doSort.
+     * It just deals with the case that Select Distinct *, which doesn't have
+     * a attribute list but need to sort based on all the attributes.
+     */
     public void doSortForDistinct(){
         Boolean eof=false;
         if(attrIndex.length==0){
@@ -106,6 +122,15 @@ public class ExternalSort extends Operator {
         f.delete();
     }
 
+    /**
+     * Merge takes in the file names of all the sorted run, dive them
+     * into number of buffer - 1 per group, call helper function to merge
+     * each group and get temp file of longer runs, then call itself to merge
+     * these longer runs. Recursive do this until all tuple are write to one
+     * file.
+     * @param runs
+     * @return
+     */
     private String Merge(Vector<String> runs){
 
         int inputNum = numOfBuffers-1;
@@ -131,6 +156,13 @@ public class ExternalSort extends Operator {
         }
 
     }
+
+    /**
+     * helper takes in maximum  B-1 sorted runs, merge them  into
+     * one run.
+     * @param f
+     * @return
+     */
    private String helper(Vector<String> f){
         int inputNum = f.size();
         if(inputNum == 1){
@@ -210,6 +242,9 @@ public class ExternalSort extends Operator {
         return file;
     }
 
+    /** takes in two tuples, determine their order
+     * according to the attrIndex.
+     * */
     private int compare(Tuple t1, Tuple t2) {
         for (int i = 0; i < attrIndex.length; i++) {
             int a = Tuple.compareTuples(t1, t2, attrIndex[i]);
@@ -220,6 +255,11 @@ public class ExternalSort extends Operator {
         return 0;
     }
 
+    /**
+     *  Takes in the source file and generate sorted runs,
+     *  the sorted runs are stored in a temp file per run.
+     * @param filename
+     */
     private void generateSortedRuns(String filename){
         runNo=0;
         int tuplesize = baseSchema.getTupleSize();
@@ -309,6 +349,12 @@ public class ExternalSort extends Operator {
 
 
     }
+
+    /**
+     * Read batches from file.
+     * @param file
+     * @return
+     */
     private Vector<Batch> fileToBatch(String file){
         boolean EOF=false;
         Vector<Batch> result = new Vector<>();
@@ -336,6 +382,13 @@ public class ExternalSort extends Operator {
 
         return result;
     }
+
+    /**
+     * convert batches to tuples in one vector, in order to
+     * facilitate future sorting.
+     * @param batches
+     * @return
+     */
     private Vector<Tuple> batchToTuple(Vector<Batch> batches){
         Vector<Tuple> tuples = new Vector<>();
         for(Batch batch:batches){
@@ -346,6 +399,12 @@ public class ExternalSort extends Operator {
         }
         return tuples;
     }
+
+    /**
+     * convert sorted tuples to batches.
+     * @param tuples
+     * @return
+     */
     private Vector<Batch> tupleToBatch(Vector<Tuple> tuples){
         Vector<Batch> batches = new Vector<>();
         Batch present = new Batch(Batch.getPageSize()/baseSchema.getTupleSize());
@@ -363,6 +422,10 @@ public class ExternalSort extends Operator {
         }
         return batches;
     }
+
+    /**
+     * Comparator used for collections.sort.
+     */
     class TupleComparator implements Comparator<Tuple> {
 
        private int[] attIndex;
@@ -380,6 +443,11 @@ public class ExternalSort extends Operator {
             return 0;
         }
     }
+
+    /**
+     * Manage the B-1 input stream during the merging period,
+     * which is called by helper.
+     */
     class StreamManager{
         private Vector<ObjectInputStream> allStreams;
         private Vector<Integer> cursors;

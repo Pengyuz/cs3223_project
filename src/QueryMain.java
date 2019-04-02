@@ -16,9 +16,9 @@ public class QueryMain{
 
     public static void main(String[] args){
 	args = new String[3];
-	args[0] = "TestDistinct";
-	args[1] = "TestDistinctRO.txt";
-	args[2]  ="TestDistinctDP.txt";
+	args[0] = "querytest";
+	args[1] = "outGBRo.txt";
+	args[2]  ="outGBDP.txt";
 	if(args.length !=3){
 	    System.out.println("usage: java QueryMain <queryfilename> <resultfile>");
 	    System.exit(1);
@@ -197,11 +197,6 @@ long starttime1 = System.currentTimeMillis();
 
 	/** print the schema of the result **/
 	Schema schema = Roroot.getSchema();
-
-//	for (int k = 0;k < schema.getAttList().size();k++) {
-//		Attribute a = (Attribute) schema.getAttList().get(k);
-//		System.out.println(a.getTabName()+"."+a.getColName());
-//	}
 	numAtts = schema.getNumCols();
 	printSchema(schema);
 	Batch resultbatch;
@@ -221,7 +216,7 @@ long starttime1 = System.currentTimeMillis();
 long endtime1 = System.currentTimeMillis();
 double executiontime1 = (endtime1 - starttime1)/1000.0;
 System.out.println("Execution time = "+ executiontime1);
-//-------------------------------------------------------------------
+////-------------------------------------------------------------------
 		long starttime2 = System.currentTimeMillis();
 
 

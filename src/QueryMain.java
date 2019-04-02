@@ -72,28 +72,29 @@ public class QueryMain{
 	/** SQLQuery is the result of the parsing **/
 
 	SQLQuery sqlquery = p.getSQLQuery();
+	boolean isDistinct = sqlquery.isDistinct();
 	int numJoin = sqlquery.getNumJoin();
 	int numGroupby = (sqlquery.getGroupByList()==null? 0 : sqlquery.getGroupByList().size());
 
 
-	/** If there are joins then assigns buffers to each join operator
-	    while preparing the plan
-	**/
+	/** If there are joins, group by or distinct, then assigns buffers to each join operator, group by and distinct
+	 while preparing the plan
+	 **/
 	/** As buffer manager is not implemented, just input the number of
-	    buffers available
-	**/
+	 buffers available
+	 **/
 
 
-	if(numJoin !=0 || numGroupby!=0){
-	    System.out.println("enter the number of buffers available");
+	if(numJoin !=0 || numGroupby!=0 || isDistinct){
+		System.out.println("enter the number of buffers available");
 
-	    try {
-		temp = in.readLine();
-		int numBuff = Integer.parseInt(temp);
-		BufferManager bm = new BufferManager(numBuff,numJoin);
-	    } catch (Exception e) {
-		e.printStackTrace();
-	 }
+		try {
+			temp = in.readLine();
+			int numBuff = Integer.parseInt(temp);
+			BufferManager bm = new BufferManager(numBuff,numJoin);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
 
 		/** Let check the number of buffers available is enough or not **/
 		if (numJoin != 0) {

@@ -110,7 +110,7 @@ public class Select extends Operator {
                  ** this tuple is added to the output buffer
                  **/
 
-                if (con.getRhs() instanceof Attribute) {
+                if (con.getRhs() instanceof Attribute) {// special case the it is join type condition
                     int leftin = base.getSchema().indexOf(con.getLhs());
                     int rightin = base.getSchema().indexOf((Attribute)con.getRhs());
                     if (Tuple.compareTuples(present, present, leftin, rightin) == 0) {

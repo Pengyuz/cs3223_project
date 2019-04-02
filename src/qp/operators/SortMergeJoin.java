@@ -102,7 +102,7 @@ public class SortMergeJoin extends Join{
 
 
         /** Sort the right materialized table on
-         ** given artribute sets
+         ** given artribute sets, one attr in this case
          **/
         Vector<Attribute> vsr = new Vector<>();
         vsr.add(rightattr);
@@ -136,7 +136,7 @@ public class SortMergeJoin extends Join{
 
 
         /** Sort the left materialized table on
-         ** given artribute sets
+         ** given artribute sets, one attr in this case
          **/
         Vector<Attribute> vsl = new Vector<>();
         vsl.add(leftattr);
@@ -188,17 +188,18 @@ public class SortMergeJoin extends Join{
         /** merge process
          **/
         while(!outbatch.isFull() && leftbatch != null && rightbatch != null) {
+            // check if tuples match
             int hasmatch = Tuple.compareTuples(leftbatch.elementAt(lcurs), rightbatch.elementAt(rcurs), leftindex, rightindex);
 
-            if (hasmatch == 0) {
+            if (hasmatch == 0) {// matched tuples
                 Tuple firstEqualTupleLeft = leftbatch.elementAt(lcurs);
-                Tuple firstEqualTupleRight = rightbatch.elementAt(rcurs);
+                Tuple firstEqualTupleRight = rightbatch.elementAt(rcurs); //tuples to be compared later
                 curEqualSetLeft.add(firstEqualTupleLeft);
                 curEqualSetRight.add(firstEqualTupleRight);
                 rcurs = advancercurs(rightbatch);
                 lcurs = advancelcurs(leftbatch);
 
-
+                // find matched left tuple and firstEqualTupleRight, until not match
                 while (lcurs != -1) {
                     if (Tuple.compareTuples(leftbatch.elementAt(lcurs),firstEqualTupleRight, leftindex, rightindex) == 0) {
                         curEqualSetLeft.add(leftbatch.elementAt(lcurs));
@@ -207,6 +208,8 @@ public class SortMergeJoin extends Join{
                         break;
                     }
                 }
+
+                // find matched right tuple and firstEqualTupleLeft, until not match
                 while (rcurs != -1) {
                     if (Tuple.compareTuples(firstEqualTupleLeft,rightbatch.elementAt(rcurs), leftindex, rightindex) == 0) {
                         curEqualSetRight.add(rightbatch.elementAt(rcurs));
@@ -216,6 +219,7 @@ public class SortMergeJoin extends Join{
                     }
                 }
 
+                // write out the joined tuples to outbatch otherwise cache it
                 for (Tuple tuplel : curEqualSetLeft) {
                     for (Tuple tupler : curEqualSetRight) {
                         Tuple res = tuplel.joinWith(tupler);
@@ -227,6 +231,7 @@ public class SortMergeJoin extends Join{
                     }
                 }
 
+                // renew the equal sets
                 curEqualSetLeft.clear();
                 curEqualSetRight.clear();
 

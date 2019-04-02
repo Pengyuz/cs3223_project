@@ -1,13 +1,10 @@
-/** prepares a random initial plan for the given SQL query **/
-/** see the ReadMe file to understand this **/
+/** DP optimizer with bushy tree implementation **/
 
 package qp.optimizer;
 
-import jdk.nashorn.internal.ir.Block;
 import qp.utils.*;
 import qp.operators.*;
 
-import java.sql.SQLOutput;
 import java.util.*;
 import java.io.*;
 
@@ -25,9 +22,9 @@ public class DPOptimizer{
     int MINCOST;
 
 
-    Hashtable tab_op_hash;          //table name to the Operator
+    Hashtable tab_op_hash;  //table name sets to the Plan, which stores the best Plan for each set of table name
     Operator root; // root of the query plan tree
-    HashMap<String,Vector<String>> edgeList;
+    HashMap<String,Vector<String>> edgeList; // store the join graph
 
 
 
@@ -41,6 +38,8 @@ public class DPOptimizer{
         groupbylist = sqlquery.getGroupByList();
         numJoin = joinlist.size();
         isDistinct = sqlquery.isDistinct();
+
+        //initialize the edgelist
         edgeList = new  HashMap<String,Vector<String>>();
         for(int i = 0;i<fromlist.size();i++){
             Vector<String> neighbors = new Vector<>();
@@ -80,6 +79,8 @@ public class DPOptimizer{
 
         return root;
     }
+
+    //build the edgelist according to joinlist
     public void buildEdgeList(){
         for(int i=0;i<joinlist.size();i++){
             Condition c = (Condition) joinlist.elementAt(i);
@@ -151,9 +152,11 @@ public class DPOptimizer{
                 op1.setSchema(schm);
                 _if.close();
             } catch (Exception e) {
-                System.err.println("RandomInitialPlan:Error reading Schema of the table" + filename);
+                System.err.println("DPOptimizer:Error reading Schema of the table" + filename);
                 System.exit(1);
             }
+
+            // initialize the hash table with single table to Plan
             Plan pl = new Plan(op1);
             HashSet<String> s = new HashSet<String>();
             s.add(tabname);
@@ -205,35 +208,43 @@ public class DPOptimizer{
             root = op1;
     }
 
-    /** create join operators **/
 
-    public void createJoinOp(){
-
-        if(numJoin !=0)
-            root = DP();
-    }
 
     public Operator getOptimizedPlan() {
         PlanCost pc = new PlanCost();
         MINCOST  = pc.getCost(root);
         System.out.println("\n\n\n");
-        System.out.println("---------------------------Final Plan----------------");
+        System.out.println("---------------------------Final Plan: DP----------------");
         Debug.PPrint(root);
         System.out.println("  "+MINCOST);
         return root;
     }
 
+    /** create join operators **/
+
+    public void createJoinOp(){
+
+        //run DP algorithm to find the best Plan
+        if(numJoin !=0)
+            root = DP();
+    }
+
+
+    /** DP algo to find the best join plan, which is stored in tab_op_hash
+     ** with key equals to set of all table names
+     * **/
     private Operator DP(){
+        //find best plan for i (i from 2 to num of joins) number of tables involved
         for(int i=2;i<=fromlist.size();i++){
-            Set<HashSet<String>> allSets = powerSet( fromlist, i);
+            Set<HashSet<String>> allSets = powerSet( fromlist, i); //generate all subsets with length i
+            //find best plan with set in allSets
             for (HashSet<String> s : allSets){
-                Plan bestPlan = new Plan(new Operator(OpType.JOIN), Integer.MAX_VALUE);
-                Set<HashSet<String>> allsubsets = allSubsets(new Vector<>(s));
+                Plan bestPlan = new Plan(new Operator(OpType.JOIN), Integer.MAX_VALUE);//dummy best plan
+                Set<HashSet<String>> allsubsets = allSubsets(new Vector<>(s));// find all subsets for set s
                 for (HashSet<String> set: allsubsets) {
                     HashSet<String> rightset = removeSets((HashSet<String>) s.clone(), set);
-
                     Vector<String> rjNb = edgeList.get(set);
-
+                    //if the two chosen sets has connection(join), perform this join plan
                     if (checkJoin(set, rightset)) {
                         if (tab_op_hash.containsKey(set)) {
                             Plan planleft = (Plan) tab_op_hash.get(set);
@@ -279,11 +290,15 @@ public class DPOptimizer{
         return false;
     }
 
+    /** Join Plan left and right, return the best Plan with min cost
+     **/
     private Plan joinPlan(Plan left, Plan right){
         Schema leftSchema = left.getRoot().getSchema();
         Schema rightSchema = right.getRoot().getSchema();
         Condition con = null;
-        Vector<Condition> cons = new Vector<>();
+        Vector<Condition> cons = new Vector<>();// store all condition that connects the two Plan's schema
+
+        //find all conditions that connects the two Plan's schema, then add to cons
         for (int i = 0; i < joinlist.size(); i++) {
             Condition cur = (Condition) joinlist.elementAt(i);
             Attribute leftattr = cur.getLhs();
@@ -295,9 +310,14 @@ public class DPOptimizer{
                 cons.add(cur);
             }
         }
+
+        //form all the conditions found above, choose the one with least cost to be the join operation
+        //others are to be treated as filters(a modified Select operation, see Select Op file)
         if (cons.size() != 0) {
-            Plan minPlan = new Plan(new Operator(OpType.JOIN), Integer.MAX_VALUE);
+            Plan minPlan = new Plan(new Operator(OpType.JOIN), Integer.MAX_VALUE); //dummy plan
             Condition minCondi = null;
+
+            //estimate all possible join ops, and select the min cost one
             for (Condition condi : cons) {
                 Join in = new Join(left.getRoot(), right.getRoot(), condi, 3);
                 Schema newsche = left.getRoot().getSchema().joinWith(right.getRoot().getSchema());
@@ -329,12 +349,15 @@ public class DPOptimizer{
             }
             cons.remove(minCondi);
             Operator tempop = minPlan.getRoot();
+
+            //rest conditions act as filters
             for (Condition c: cons) {
                 c.setExprType(Condition.SELECT);
                 Select sop = new Select(tempop,c, OpType.SELECT);
                 sop.setSchema(tempop.getSchema());
                 tempop = sop;
             }
+            
             PlanCost p = new PlanCost();
             int finalcost = p.getCost(tempop);
             return new Plan(tempop, finalcost);
@@ -343,6 +366,8 @@ public class DPOptimizer{
         }
     }
 
+    /** Generate all subsets of a set
+     **/
     private Set<HashSet<String>> allSubsets(Vector<String> set) {
         Set<HashSet<String>> res = new HashSet<>();
         for (int i = 1; i < set.size(); i++) {
@@ -354,6 +379,8 @@ public class DPOptimizer{
         return res;
     }
 
+    /** remove a subset of a original set from the origin
+     **/
     private HashSet<String> removeSets(HashSet<String> origin, HashSet<String> subtract) {
         for (String s:subtract) {
             origin.remove(s);
@@ -361,6 +388,8 @@ public class DPOptimizer{
         return origin;
     }
 
+    /** Generate all subsets with length equals to n
+     **/
     private Set<HashSet<String>> powerSet(Vector<String> set, int n) {
         if (n < 0)
             throw new IllegalArgumentException();
@@ -479,7 +508,8 @@ public class DPOptimizer{
         }
     }
 
-
+/** Plan object, used to store the root operator and its plan cost
+ **/
 class Plan{
         private Operator root;
         private int cost;

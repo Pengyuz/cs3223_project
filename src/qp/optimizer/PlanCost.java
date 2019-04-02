@@ -77,6 +77,9 @@ public class PlanCost{
 	else if(node.getOpType()==OpType.GROUPBY){
 		return getStatistics((GroupBy)node);
 	}
+	else if(node.getOpType()==OpType.DISTINCT){
+		return getStatistics((Distinct)node);
+	}
 	return -1;
     }
 
@@ -209,13 +212,26 @@ public class PlanCost{
 	//int numdistinct = ((Integer)ht.get(fullattr)).intValue();
 	int outtuples;
 
-	/** calculate the number of tuples in result **/
-	if(exprtype==Condition.EQUAL){
-	    outtuples = (int) Math.ceil((double)intuples/(double)numdistinct);
-	}else if(exprtype==Condition.NOTEQUAL){
-	    outtuples= (int) Math.ceil(intuples - ((double) intuples/(double) numdistinct));
-	}else{
-	    outtuples=(int) Math.ceil(0.5*intuples);
+	if (con.getRhs() instanceof Attribute) {
+		Attribute rightattr = (Attribute) con.getRhs();
+
+		int rightindex = schema.indexOf(rightattr);
+		Attribute fullattrright = schema.getAttribute(rightindex);
+		Integer tempright = (Integer) ht.get(fullattrright);
+		int numdistinctright = tempright.intValue();
+
+		outtuples = numdistinct > numdistinctright? (int) Math.ceil((double) intuples / (double) numdistinct)*numdistinctright
+									: (int) Math.ceil((double) intuples / (double) numdistinctright)*numdistinct;
+	} else {
+
+		/** calculate the number of tuples in result **/
+		if (exprtype == Condition.EQUAL) {
+			outtuples = (int) Math.ceil((double) intuples / (double) numdistinct);
+		} else if (exprtype == Condition.NOTEQUAL) {
+			outtuples = (int) Math.ceil(intuples - ((double) intuples / (double) numdistinct));
+		} else {
+			outtuples = (int) Math.ceil(0.5 * intuples);
+		}
 	}
 
 	/** Modify the number of distinct values of each attribute
@@ -232,6 +248,21 @@ public class PlanCost{
     }
 
     protected  int getStatistics(GroupBy node){
+		int intuples = calculateCost(node.getBase());
+		if(isFeasible == false){
+			return Integer.MAX_VALUE;
+		}
+		Schema baseSchema = node.getBase().getSchema();
+		int tupleSize = baseSchema.getTupleSize();
+		int numBuff = BufferManager.numBuffer;
+		int inPages = (int) Math.ceil(((double) intuples/(double)tupleSize));
+
+		int sortCost = (int) (1+Math.ceil(((double)Math.log(Math.ceil((double)inPages/numBuff))/Math.log(numBuff-1))));
+		cost = cost + sortCost;
+		return intuples;
+	}
+
+	protected  int getStatistics(Distinct node){
 		int intuples = calculateCost(node.getBase());
 		if(isFeasible == false){
 			return Integer.MAX_VALUE;

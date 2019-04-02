@@ -228,27 +228,23 @@ public class DPOptimizer{
             Set<HashSet<String>> allSets = powerSet( fromlist, i);
             for (HashSet<String> s : allSets){
                 Plan bestPlan = new Plan(new Operator(OpType.JOIN), Integer.MAX_VALUE);
-                for (String rj : s) {
-                    HashSet<String> sj = (HashSet<String>) s.clone();
-                    sj.remove(rj);
-                    Vector<String> rjNb = edgeList.get(rj);
-                    boolean hasJoin = false;
-                    for(String name: rjNb) {
+                Set<HashSet<String>> allsubsets = allSubsets(new Vector<>(s));
+                for (HashSet<String> set: allsubsets) {
+                    HashSet<String> rightset = removeSets((HashSet<String>) s.clone(), set);
 
-                        if(sj.contains(name)) {
-                            hasJoin =true;
-                            break;
-                        }
-                    }
-                    //System.out.println(hasJoin+" "+ s.toString()+ " "+rj + " "+ sj.toString());
-                    if (hasJoin) {
-                        if (tab_op_hash.containsKey(sj)) {
-                            Plan plansj = (Plan) tab_op_hash.get(sj);
-                            int plansj_cost = plansj.getCost();
-                            HashSet<String> rjkey = new HashSet<>();
-                            rjkey.add(rj);
-                            Plan planrj = (Plan) tab_op_hash.get(rjkey);
-                            Plan curP = joinPlan(plansj, planrj);
+                    Vector<String> rjNb = edgeList.get(set);
+
+                    if (checkJoin(set, rightset)) {
+                        if (tab_op_hash.containsKey(set)) {
+                            Plan planleft = (Plan) tab_op_hash.get(set);
+                            int planleft_cost = planleft.getCost();
+                            Plan planright = (Plan) tab_op_hash.get(rightset);
+                            if (planleft == null || planright == null) {
+                                continue;
+                            }
+                            Operator ol = planleft.getRoot();
+                            Operator or = planright.getRoot();
+                            Plan curP = joinPlan(planleft, planright);
                             if (curP.getCost() < bestPlan.getCost()) {
                                 bestPlan = curP;
                             }
@@ -271,53 +267,98 @@ public class DPOptimizer{
         return ((Plan)tab_op_hash.get(alltab)).getRoot();
     }
 
+    private boolean checkJoin(HashSet<String> left, HashSet<String> right) {
+        for (String ls: left) {
+            Vector<String> lnb = edgeList.get(ls);
+            for (String ln: lnb) {
+                if (right.contains(ln)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
 
     private Plan joinPlan(Plan left, Plan right){
         Schema leftSchema = left.getRoot().getSchema();
         Schema rightSchema = right.getRoot().getSchema();
         Condition con = null;
+        Vector<Condition> cons = new Vector<>();
         for (int i = 0; i < joinlist.size(); i++) {
             Condition cur = (Condition) joinlist.elementAt(i);
             Attribute leftattr = cur.getLhs();
             Attribute rightattr = (Attribute) cur.getRhs();
             if(leftSchema.indexOf(leftattr) != -1 && rightSchema.indexOf(rightattr) != -1) {
-                con = cur;
+                cons.add(cur);
             } else if (leftSchema.indexOf(rightattr) != -1 && rightSchema.indexOf(leftattr) != -1) {
                 cur.flip();
-                con = cur;
-
-            } else {
-                continue;
+                cons.add(cur);
             }
         }
-        if (con != null) {
-            Join in = new Join(left.getRoot(), right.getRoot(), con, 3);
-            Schema newsche = left.getRoot().getSchema().joinWith(right.getRoot().getSchema());
-            in.setSchema(newsche);
-            NestedJoin nj = new NestedJoin(in);
-            nj.setJoinType(JoinType.NESTEDJOIN);
-            BlockNestedJoin bj = new BlockNestedJoin(in);
-            bj.setJoinType(JoinType.BLOCKNESTED);
-            SortMergeJoin sj = new SortMergeJoin(in);
-            sj.setJoinType(JoinType.SORTMERGE);
-            PlanCost pc1 = new PlanCost();
-            PlanCost pc2 = new PlanCost();
-            PlanCost pc3 = new PlanCost();
-            int nj_cost = pc1.getCost(nj);
-            int bj_cost = pc2.getCost(bj);
-            int sj_cost = pc3.getCost(sj);
-            //System.out.println(nj_cost + " " + bj_cost +" "+ sj_cost);
-            int min = Math.min(nj_cost, Math.min(bj_cost, sj_cost));
-            if (min == bj_cost) {
-                return new Plan(bj, min);
-            } else if (min == sj_cost) {
-                return new Plan(sj, min);
-            } else {
-                return new Plan(nj, min);
+        if (cons.size() != 0) {
+            Plan minPlan = new Plan(new Operator(OpType.JOIN), Integer.MAX_VALUE);
+            Condition minCondi = null;
+            for (Condition condi : cons) {
+                Join in = new Join(left.getRoot(), right.getRoot(), condi, 3);
+                Schema newsche = left.getRoot().getSchema().joinWith(right.getRoot().getSchema());
+                in.setSchema(newsche);
+                NestedJoin nj = new NestedJoin(in);
+                nj.setJoinType(JoinType.NESTEDJOIN);
+                BlockNestedJoin bj = new BlockNestedJoin(in);
+                bj.setJoinType(JoinType.BLOCKNESTED);
+                SortMergeJoin sj = new SortMergeJoin(in);
+                sj.setJoinType(JoinType.SORTMERGE);
+                PlanCost pc1 = new PlanCost();
+                PlanCost pc2 = new PlanCost();
+                PlanCost pc3 = new PlanCost();
+                int nj_cost = pc1.getCost(nj);
+                int bj_cost = pc2.getCost(bj);
+                int sj_cost = pc3.getCost(sj);
+                //System.out.println(nj_cost + " " + bj_cost +" "+ sj_cost);
+                int min = Math.min(nj_cost, Math.min(bj_cost, sj_cost));
+                if (min < minPlan.getCost()) {
+                    minCondi = condi;
+                    if (min == bj_cost) {
+                        minPlan = new Plan(bj, min);
+                    } else if (min == sj_cost) {
+                        minPlan = new Plan(sj, min);
+                    } else {
+                        minPlan = new Plan(nj, min);
+                    }
+                }
             }
+            cons.remove(minCondi);
+            Operator tempop = minPlan.getRoot();
+            for (Condition c: cons) {
+                c.setExprType(Condition.SELECT);
+                Select sop = new Select(tempop,c, OpType.SELECT);
+                sop.setSchema(tempop.getSchema());
+                tempop = sop;
+            }
+            PlanCost p = new PlanCost();
+            int finalcost = p.getCost(tempop);
+            return new Plan(tempop, finalcost);
         } else {
             return null;
         }
+    }
+
+    private Set<HashSet<String>> allSubsets(Vector<String> set) {
+        Set<HashSet<String>> res = new HashSet<>();
+        for (int i = 1; i < set.size(); i++) {
+            Set<HashSet<String>> cur = powerSet(set, i);
+            for (HashSet<String> s: cur) {
+                res.add(s);
+            }
+        }
+        return res;
+    }
+
+    private HashSet<String> removeSets(HashSet<String> origin, HashSet<String> subtract) {
+        for (String s:subtract) {
+            origin.remove(s);
+        }
+        return origin;
     }
 
     private Set<HashSet<String>> powerSet(Vector<String> set, int n) {

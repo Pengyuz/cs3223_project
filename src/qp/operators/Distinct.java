@@ -1,3 +1,5 @@
+/** distinct operation**/
+
 package qp.operators;
 
 import qp.optimizer.BufferManager;
@@ -8,24 +10,24 @@ import java.util.Vector;
 
 public class Distinct extends Operator{
     Operator base;
-    Vector attrSet;
+    Vector attrSet; // which is same as the projectlist
     int batchsize;  // number of tuples per outbatch
 
 
     /** The following fields are requied during execution
-     ** of the Project Operator
+     ** of the Distinct Operator
      **/
 
-    Batch inbatch;
-    Batch outbatch;
-    int curIndex;
+    Batch inbatch; // input buffer
+    Batch outbatch; // output buffer
+    int curIndex; // iterator of the input buffer
     static int filenum=0;   // To get unique filenum for this operation
-    String filename;
+    String filename; //temp file
     int numbuffer;
 
     ObjectInputStream in;// File pointer to the sorted materialized file
-    Vector<Tuple> cachedTuples;
-    Tuple lastTuple = null;
+    Vector<Tuple> cachedTuples; //used to store overflow tuples, if there is
+    Tuple lastTuple = null; // previous tuple to compare
 
     public Distinct(Operator base, Vector as,int type){
         super(type);
@@ -50,7 +52,9 @@ public class Distinct extends Operator{
         return attrSet;
     }
 
-    /** Opens the connection to the base operator
+    /** Materialize the operator from base to temp file
+     * Sort and write back to temp file
+     * Opens the connection to the sorted file
      **/
     public boolean open(){
         /** setnumber of tuples per batch **/
@@ -82,12 +86,13 @@ public class Distinct extends Operator{
             if(!base.close())
                 return false;
         }
-
+        /** sort the material file
+         **/
         ExternalSort s = new ExternalSort(filename, base.getSchema(), attrSet, 4, numbuffer);
         s.doSortForDistinct();
 
         /** Scan of sorted table
-         ** into inputstreams
+         ** into inputstream
          **/
         try {
             in = new ObjectInputStream(new FileInputStream(filename));
@@ -103,6 +108,10 @@ public class Distinct extends Operator{
         return true;
     }
 
+
+    /** from inputstream selects the distinct tuples
+     ** And returns a page of output tuples
+     **/
     public Batch next(){
 
         if(inbatch == null && cachedTuples.size() == 0){
@@ -144,6 +153,8 @@ public class Distinct extends Operator{
         return outbatch;
     }
 
+    /** Check if two tuples contains the same records
+     **/
     private int compareTuples( Tuple left,Tuple right){
         if(left.data().size()==0 || right.data().size() == 0 || left.data().size() != right.data().size()){
             return 1;
@@ -156,6 +167,8 @@ public class Distinct extends Operator{
         return 0;
     }
 
+    /** advance the cursor for input buffer
+     **/
     private int advanceCurIndex(Batch inba) {
         if(curIndex < inba.size() - 1){
             return curIndex + 1;
@@ -166,7 +179,7 @@ public class Distinct extends Operator{
                 try{
                     in.close();
                 }catch (IOException io){
-                    System.out.println("SortMerge:Error in temporary file reading");
+                    System.out.println("Distinct:Error in temporary file reading");
                 }
                 inbatch = null;
                 return -1;
@@ -185,12 +198,6 @@ public class Distinct extends Operator{
         File f = new File(filename);
         f.delete();
         return true;
-			/*
-		if(base.close())
-		    return true;
-		else
-		    return false;
-		    **/
     }
 
 

@@ -1,3 +1,4 @@
+/** group by operation**/
 package qp.operators;
 
 import qp.optimizer.BufferManager;
@@ -13,7 +14,7 @@ public class GroupBy extends Operator{
 
 
     /** The following fields are requied during execution
-     ** of the Project Operator
+     ** of the GroupBy Operator
      **/
 
     Batch inbatch;
@@ -23,8 +24,8 @@ public class GroupBy extends Operator{
     String filename;
     int numbuffer;
     ObjectInputStream in;// File pointer to the sorted materialized file
-    Vector<Tuple> cachedSameGroupTuples;
-    int[] attrIndex;
+    Vector<Tuple> cachedSameGroupTuples; // store overflow tuples
+    int[] attrIndex; // index of groupbylist attributes
     Tuple lastTuple = null;
     public GroupBy(Operator base, Vector as,int type){
         super(type);
@@ -53,6 +54,7 @@ public class GroupBy extends Operator{
     /** Opens the connection to the base operator
      ** Also figures out what are the columns to be
      ** grouped from the base operator
+     * materialize to a file and Sort according to attSet
      **/
     public boolean open(){
         /** setnumber of tuples per batch **/
@@ -124,6 +126,10 @@ public class GroupBy extends Operator{
         return true;
     }
 
+
+    /** from input buffers selects the tuples satisfying group by condition
+     ** And returns a page of output tuples
+     **/
     public Batch next(){
 
         if(inbatch == null && cachedSameGroupTuples.size() == 0){
@@ -180,6 +186,8 @@ public class GroupBy extends Operator{
         return outbatch;
     }
 
+    /** Check if two tuples in the same group
+     **/
     private int compareTuplesInIndexs( Tuple left,Tuple right, int[] indexs){
         if(indexs.length==0){
             return 0;
@@ -192,6 +200,8 @@ public class GroupBy extends Operator{
         return 0;
     }
 
+    /** advance the cursor for input buffer
+     **/
     private int advanceCurIndex(Batch inba) {
         if(curIndex < inba.size() - 1){
             return curIndex + 1;
@@ -202,7 +212,7 @@ public class GroupBy extends Operator{
                 try{
                     in.close();
                 }catch (IOException io){
-                    System.out.println("SortMerge:Error in temporary file reading");
+                    System.out.println("GroupBy:Error in temporary file reading");
                 }
                 inbatch = null;
                 return -1;

@@ -24,8 +24,8 @@ public class SortMergeJoin extends Join{
     static int filenum=0;   // To get unique filenum for this operation
 
     Batch outbatch;   // Output buffer
-    Vector<Tuple> curEqualSetLeft;
-    Vector<Tuple> curEqualSetRight;
+    Vector<Tuple> curEqualSetLeft; // store left equal set to be joined
+    Vector<Tuple> curEqualSetRight; // store right equal set to be joined
     Vector<Tuple> cachedEqualTuples;   // Overflowed equal tuples
     Batch leftbatch;  // Buffer for left input stream
     Batch rightbatch;  // Buffer for right input stream

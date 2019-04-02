@@ -1,14 +1,10 @@
 package qp.operators;
 
-import com.sun.javafx.collections.MappingChange;
 import qp.utils.*;
-
-import javax.print.DocFlavor;
-import javax.swing.plaf.basic.BasicTableHeaderUI;
-import java.awt.*;
 import java.io.*;
 import java.util.*;
 import java.lang.*;
+
 public class ExternalSort extends Operator {
     int runNo;
     int batchSize;//number of tuples per batch

@@ -16,7 +16,7 @@ public class QueryMain{
 
     public static void main(String[] args){
 	args = new String[3];
-	args[0] = "queryGB";
+	args[0] = "querytest";
 	args[1] = "outGBRo.txt";
 	args[2]  ="outGBDP.txt";
 	if(args.length !=3){
@@ -216,7 +216,7 @@ long starttime1 = System.currentTimeMillis();
 long endtime1 = System.currentTimeMillis();
 double executiontime1 = (endtime1 - starttime1)/1000.0;
 System.out.println("Execution time = "+ executiontime1);
-//-------------------------------------------------------------------
+////-------------------------------------------------------------------
 		long starttime2 = System.currentTimeMillis();
 
 

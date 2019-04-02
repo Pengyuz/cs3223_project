@@ -109,9 +109,18 @@ public class Select extends Operator {
                 /** If the condition is satisfied then
                  ** this tuple is added to the output buffer
                  **/
-                if (checkCondition(present))
-                    //if(present.checkCondn(con))
-                    outbatch.add(present);
+
+                if (con.getRhs() instanceof Attribute) {
+                    int leftin = base.getSchema().indexOf(con.getLhs());
+                    int rightin = base.getSchema().indexOf((Attribute)con.getRhs());
+                    if (Tuple.compareTuples(present, present, leftin, rightin) == 0) {
+                        outbatch.add(present);
+                    }
+                } else {
+                    if (checkCondition(present))
+                        //if(present.checkCondn(con))
+                        outbatch.add(present);
+                }
             }
 
             /** Modify the cursor to the position required

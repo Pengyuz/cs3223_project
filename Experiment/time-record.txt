@@ -1,0 +1,41 @@
+Experiment 1.1:
+----------------------Execution Plan for DP----------------
+BlockNested(CERTIFIED  [EMPLOYEES.eid==CERTIFIED.eid]  EMPLOYEES)
+DP:12.862 number of record matches 10000
+
+Experiment 1.2:
+----------------------Execution Plan for DP----------------
+BlockNested(SCHEDULE  [SCHEDULE.flno==FLIGHTS.flno]  FLIGHTS)
+DP:13.306 number of record matches 10000
+
+Experiment 1.3:
+ ----------------------Execution Plan for DP----------------
+ BlockNested(AIRCRAFTS  [SCHEDULE.aid==AIRCRAFTS.aid]  SCHEDULE)
+ DP:12.614 number of record matches 10000
+
+1.1:BJ
+----------------------Execution Plan for DP----------------
+BlockNested(CERTIFIED  [EMPLOYEES.eid==CERTIFIED.eid]  EMPLOYEES)
+12.251 size match
+1.2:BJ
+----------------------Execution Plan for DP----------------
+BlockNested(SCHEDULE  [SCHEDULE.flno==FLIGHTS.flno]  FLIGHTS)
+12.502 size match
+1.3BJ
+----------------------Execution Plan for DP----------------
+BlockNested(AIRCRAFTS  [SCHEDULE.aid==AIRCRAFTS.aid]  SCHEDULE)
+12.509 size match
+
+1.1 SMJ
+----------------------Execution Plan for DP----------------
+SortMerge(CERTIFIED  [EMPLOYEES.eid==CERTIFIED.eid]  EMPLOYEES)
+11.28 size match
+1.2 SMJ
+----------------------Execution Plan for DP----------------
+SortMerge(FLIGHTS  [SCHEDULE.flno==FLIGHTS.flno]  SCHEDULE)
+12.065 size match
+1.3SMJ
+----------------------Execution Plan for DP----------------
+SortMerge(AIRCRAFTS  [SCHEDULE.aid==AIRCRAFTS.aid]  SCHEDULE)
+9.706 size match
+

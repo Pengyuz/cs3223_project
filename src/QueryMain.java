@@ -13,13 +13,8 @@ public class QueryMain{
 
     static PrintWriter out;
     static int numAtts;
-
     public static void main(String[] args){
-	args = new String[3];
-	args[0] = "querytest";
-	args[1] = "outGBRo.txt";
-	args[2]  ="outGBDP.txt";
-	if(args.length !=3){
+	if(args.length !=2){
 	    System.out.println("usage: java QueryMain <queryfilename> <resultfile>");
 	    System.exit(1);
 	}
@@ -43,7 +38,6 @@ public class QueryMain{
 
 	String queryfile = args[0];
 	String resultfile = args[1];
-	String resultfile1 = args[2];
 	FileInputStream source = null;
 	try{
 	   source = new FileInputStream(queryfile);
@@ -130,12 +124,12 @@ public class QueryMain{
 	    execution plan
 **/
 
-	RandomOptimizer ro = new RandomOptimizer(sqlquery);
-	Operator logicalroot = ro.getOptimizedPlan();
-	if(logicalroot==null){
-		System.out.println("root is null");
-		System.exit(1);
-	}
+//	RandomOptimizer ro = new RandomOptimizer(sqlquery);
+//	Operator logicalroot = ro.getOptimizedPlan();
+//	if(logicalroot==null){
+//		System.out.println("root is null");
+//		System.exit(1);
+//	}
 
 	DPOptimizer  dp = new DPOptimizer(sqlquery);
 		dp.prepareInitialPlan();
@@ -150,12 +144,12 @@ public class QueryMain{
 
 	/** preparing the execution plan **/
 
-	Operator Roroot = RandomOptimizer.makeExecPlan(logicalroot);
+//	Operator Roroot = RandomOptimizer.makeExecPlan(logicalroot);
 
 /** Print final Plan **/
-	System.out.println("----------------------Execution Plan for Rondom----------------");
-	Debug.PPrint(Roroot);
-	System.out.println();
+//	System.out.println("----------------------Execution Plan for Rondom----------------");
+//	Debug.PPrint(Roroot);
+//	System.out.println();
 
 		System.out.println("----------------------Execution Plan for DP----------------");
 		Debug.PPrint(DProot);
@@ -178,45 +172,43 @@ System.out.println("enter 1 to continue, 0 to abort ");
 		e.printStackTrace();
 	 }
 
-long starttime1 = System.currentTimeMillis();
-
-
-
-	if(Roroot.open()==false){
-	    System.out.println("Root: Error in opening of root");
-	    System.exit(1);
-	}
-	try{
-	    out = new PrintWriter(new BufferedWriter(new FileWriter(resultfile)));
-	}catch(IOException io){
-	    System.out.println("QueryMain:error in opening result file: "+resultfile);
-	    System.exit(1);
-	}
-
-
-
-
-	/** print the schema of the result **/
-	Schema schema = Roroot.getSchema();
-	numAtts = schema.getNumCols();
-	printSchema(schema);
-	Batch resultbatch;
-
-
-	/** print each tuple in the result **/
-
-
-	while((resultbatch=Roroot.next())!=null){
-	    for(int i=0;i<resultbatch.size();i++){
-		printTuple(resultbatch.elementAt(i));
-	    }
-	}
-		Roroot.close();
-	out.close();
-
-long endtime1 = System.currentTimeMillis();
-double executiontime1 = (endtime1 - starttime1)/1000.0;
-System.out.println("Execution time = "+ executiontime1);
+//long starttime1 = System.currentTimeMillis();
+//
+//	if(Roroot.open()==false){
+//	    System.out.println("Root: Error in opening of root");
+//	    System.exit(1);
+//	}
+//	try{
+//	    out = new PrintWriter(new BufferedWriter(new FileWriter(resultfile)));
+//	}catch(IOException io){
+//	    System.out.println("QueryMain:error in opening result file: "+resultfile);
+//	    System.exit(1);
+//	}
+//
+//
+//
+//
+//	/** print the schema of the result **/
+//	Schema schema = Roroot.getSchema();
+//	numAtts = schema.getNumCols();
+//	printSchema(schema);
+//	Batch resultbatch;
+//
+//
+//	/** print each tuple in the result **/
+//
+//
+//	while((resultbatch=Roroot.next())!=null){
+//	    for(int i=0;i<resultbatch.size();i++){
+//		printTuple(resultbatch.elementAt(i));
+//	    }
+//	}
+//		Roroot.close();
+//	out.close();
+//
+//long endtime1 = System.currentTimeMillis();
+//double executiontime1 = (endtime1 - starttime1)/1000.0;
+//System.out.println("Execution time = "+ executiontime1);
 ////-------------------------------------------------------------------
 		long starttime2 = System.currentTimeMillis();
 
@@ -227,9 +219,9 @@ System.out.println("Execution time = "+ executiontime1);
 			System.exit(1);
 		}
 		try{
-			out = new PrintWriter(new BufferedWriter(new FileWriter(resultfile1)));
+			out = new PrintWriter(new BufferedWriter(new FileWriter(resultfile)));
 		}catch(IOException io){
-			System.out.println("QueryMain:error in opening result file: "+resultfile1);
+			System.out.println("QueryMain:error in opening result file: "+resultfile);
 			System.exit(1);
 		}
 

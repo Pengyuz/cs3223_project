@@ -334,7 +334,6 @@ public class DPOptimizer{
                 int nj_cost = pc1.getCost(nj);
                 int bj_cost = pc2.getCost(bj);
                 int sj_cost = pc3.getCost(sj);
-                //System.out.println(nj_cost + " " + bj_cost +" "+ sj_cost);
                 int min = Math.min(nj_cost, Math.min(bj_cost, sj_cost));
                 if (min < minPlan.getCost()) {
                     minCondi = condi;

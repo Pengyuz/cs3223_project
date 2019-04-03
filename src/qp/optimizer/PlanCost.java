@@ -161,7 +161,7 @@ public class PlanCost{
 	    break;
 	case JoinType.BLOCKNESTED:
 
-	    joincost = (int) (leftpages+ Math.ceil((double)leftpages / (double)numbuff) * rightpages);
+	    joincost = (int) (leftpages+ Math.ceil((double)leftpages / ((double)numbuff-2)) * rightpages);
 		break;
 	case JoinType.SORTMERGE:
 		int numpassl = (int) (1 + Math.ceil( (double)Math.log(Math.ceil((double)leftpages/numbuff))/Math.log(numbuff-1)));

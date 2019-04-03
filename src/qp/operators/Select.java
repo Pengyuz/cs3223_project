@@ -156,7 +156,6 @@ public class Select extends Operator {
     /** To check whether the selection condition is satisfied for
      the present tuple
      **/
- //schema: biaoge de geshi
     protected boolean checkCondition(Tuple tuple) {
         Attribute attr = con.getLhs();
         int index = schema.indexOf(attr);

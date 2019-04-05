@@ -152,6 +152,9 @@ public class SortMergeJoin extends Join{
             inr = new ObjectInputStream(new FileInputStream(rfname));
             leftbatch = (Batch) inl.readObject();
             rightbatch = (Batch) inr.readObject();
+        }catch (EOFException e) {
+            leftbatch  =null;
+            rightbatch = null;
         } catch (IOException | ClassNotFoundException e) {
             e.printStackTrace();
         }

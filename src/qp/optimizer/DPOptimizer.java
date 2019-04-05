@@ -191,7 +191,10 @@ public class DPOptimizer{
                 String tabname = cn.getLhs().getTabName();
                 //System.out.println("RandomInitial:-------------Select-------:"+tabname);
 
-                Operator tempop = (Operator)tab_op_hash.get(tabname);
+                HashSet<String> tn = new HashSet<>();
+                tn.add(tabname);
+                Plan tempplan = (Plan)tab_op_hash.get(tn);
+                Operator tempop = tempplan.getRoot();
                 op1 = new Select(tempop,cn,OpType.SELECT);
                 /** set the schema same as base relation **/
                 op1.setSchema(tempop.getSchema());

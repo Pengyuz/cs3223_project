@@ -98,7 +98,7 @@ public class Distinct extends Operator{
             in = new ObjectInputStream(new FileInputStream(filename));
             inbatch = (Batch) in.readObject();
         } catch (EOFException e){
-            e.printStackTrace();
+            inbatch = null;
         } catch (IOException | ClassNotFoundException e) {
             e.printStackTrace();
         }

@@ -198,8 +198,9 @@ public class DPOptimizer{
                 op1 = new Select(tempop,cn,OpType.SELECT);
                 /** set the schema same as base relation **/
                 op1.setSchema(tempop.getSchema());
+                Plan newpl = new Plan(op1);
 
-                modifyHashtable(tempop,op1);
+                modifyHashtable(tempplan,newpl);
                 //tab_op_hash.put(tabname,op1);
 
             }
@@ -432,15 +433,13 @@ public class DPOptimizer{
         }
     }
 
-    private void modifyHashtable(Operator old, Operator newop){
+    private void modifyHashtable(Plan old, Plan newpl){
         Enumeration e=tab_op_hash.keys();
         while(e.hasMoreElements()){
             HashSet<String> key = (HashSet<String>)e.nextElement();
             Plan temp = (Plan) tab_op_hash.get(key);
-            Plan oldPl = new Plan(old);
-            if(temp==oldPl){
-                Plan newPl = new Plan(newop);
-                tab_op_hash.put(key,newPl);
+            if(temp==old){
+                tab_op_hash.put(key,newpl);
             }
         }
     }
@@ -525,7 +524,8 @@ class Plan{
         this.root = op;
         cost = c;
     }
-        public Operator getRoot(){
+
+    public Operator getRoot(){
             return root;
         }
         public int getCost(){
